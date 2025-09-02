@@ -21,6 +21,9 @@ import (
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/user"
 )
 
+// ListResponse is the JSON response array for non-paginated list queries.
+type ListResponse[T any] []*T
+
 type PageConfig struct {
 	MinItemsPerPage int `json:"min_items_per_page"`
 	ItemsPerPage    int `json:"items_per_page"`
