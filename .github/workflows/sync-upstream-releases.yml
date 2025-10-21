@@ -1,0 +1,187 @@
+name: Sync Upstream Releases
+
+on:
+  schedule:
+    # Check for new releases daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check for upstream updates
+        id: versions
+        run: ./.github/scripts/check-upstream-version.sh
+
+      - name: Summary - No update needed
+        if: steps.versions.outputs.needs_update == 'false'
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## ✅ Upstream Sync Check
+
+          **Status:** Up to date
+
+          - **Current version:** ${{ steps.versions.outputs.current_upstream }}
+          - **Latest upstream version:** ${{ steps.versions.outputs.latest_upstream }}
+
+          No sync required.
+          EOF
+
+      - name: Check if PR already exists
+        if: steps.versions.outputs.needs_update == 'true'
+        id: check_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_UPSTREAM="${{ steps.versions.outputs.latest_upstream }}"
+          BRANCH_NAME="sync-upstream-${LATEST_UPSTREAM}"
+
+          # Check if PR already exists (in any state - open, closed, or merged)
+          PR_DATA=$(gh pr list --repo accelleran/entrest --head "$BRANCH_NAME" --state all --json number,url,state --jq '.[0]')
+
+          if [ "$PR_DATA" != "null" ] && [ -n "$PR_DATA" ]; then
+            PR_URL=$(echo "$PR_DATA" | jq -r '.url')
+            PR_STATE=$(echo "$PR_DATA" | jq -r '.state')
+
+            # Check if the branch still exists
+            if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+              BRANCH_EXISTS=true
+            else
+              BRANCH_EXISTS=false
+            fi
+
+            # Only consider PR as "existing" if it's open OR if it's closed/merged but branch still exists
+            # If PR is closed and branch is deleted, allow recreation
+            if [ "$PR_STATE" = "OPEN" ] || [ "$BRANCH_EXISTS" = "true" ]; then
+              echo "pr_exists=true" >> $GITHUB_OUTPUT
+              echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+              echo "pr_state=$PR_STATE" >> $GITHUB_OUTPUT
+              echo "PR already exists for $LATEST_UPSTREAM"
+              echo "State: $PR_STATE"
+              echo "URL: $PR_URL"
+            else
+              echo "pr_exists=false" >> $GITHUB_OUTPUT
+              echo "PR exists but is closed and branch is deleted - will recreate"
+              echo "Previous PR: $PR_URL (state: $PR_STATE)"
+            fi
+          else
+            echo "pr_exists=false" >> $GITHUB_OUTPUT
+            echo "No existing PR found"
+          fi
+
+      - name: Summary - PR already exists
+        if: steps.versions.outputs.needs_update == 'true' && steps.check_pr.outputs.pr_exists == 'true'
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🔄 Upstream Sync Check
+
+          **Status:** PR already exists
+
+          - **Current version:** ${{ steps.versions.outputs.current_upstream }}
+          - **Latest upstream version:** ${{ steps.versions.outputs.latest_upstream }}
+          - **Update type:** ${{ steps.versions.outputs.update_type }}
+          - **PR state:** ${{ steps.check_pr.outputs.pr_state }}
+          - **PR URL:** ${{ steps.check_pr.outputs.pr_url }}
+
+          A pull request for this version already exists.
+          EOF
+
+      - name: Create sync branch from upstream
+        if: steps.versions.outputs.needs_update == 'true' && steps.check_pr.outputs.pr_exists == 'false'
+        id: create_branch
+        run: |
+          LATEST_UPSTREAM="${{ steps.versions.outputs.latest_upstream }}"
+          UPDATE_TYPE="${{ steps.versions.outputs.update_type }}"
+          BRANCH_NAME="sync-upstream-${LATEST_UPSTREAM}"
+
+          # Map update type to semantic commit prefix
+          case "$UPDATE_TYPE" in
+            major)
+              COMMIT_PREFIX="feat!"
+              ;;
+            minor)
+              COMMIT_PREFIX="feat"
+              ;;
+            patch)
+              COMMIT_PREFIX="fix"
+              ;;
+            *)
+              echo "Error: Unknown update type: $UPDATE_TYPE"
+              exit 1
+              ;;
+          esac
+
+          # Create branch from the upstream tag
+          git checkout -b "$BRANCH_NAME" "${LATEST_UPSTREAM}"
+
+          # Build semantic commit message for PR title
+          COMMIT_MSG="${COMMIT_PREFIX}: merge upstream release ${LATEST_UPSTREAM}"
+          echo "commit_title=${COMMIT_MSG}" >> $GITHUB_OUTPUT
+
+          # Push branch (force push to overwrite any stale branch from failed runs)
+          git push --force origin "$BRANCH_NAME"
+
+      - name: Create Pull Request
+        if: steps.versions.outputs.needs_update == 'true' && steps.check_pr.outputs.pr_exists == 'false'
+        id: create_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_UPSTREAM: ${{ steps.versions.outputs.current_upstream }}
+          LATEST_UPSTREAM: ${{ steps.versions.outputs.latest_upstream }}
+          UPDATE_TYPE: ${{ steps.versions.outputs.update_type }}
+        run: |
+          # Get PR template from master
+          git checkout origin/master -- .github/PULL_REQUEST_TEMPLATE/upstream-sync.md
+
+          BRANCH_NAME="sync-upstream-${LATEST_UPSTREAM}"
+          PR_TITLE="${{ steps.create_branch.outputs.commit_title }}"
+          PR_BODY=$(envsubst < .github/PULL_REQUEST_TEMPLATE/upstream-sync.md)
+
+          PR_URL=$(gh pr create \
+            --repo accelleran/entrest \
+            --title "${PR_TITLE}" \
+            --body "${PR_BODY}" \
+            --base master \
+            --head "${BRANCH_NAME}" \
+            --label "upstream-sync")
+
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Summary - PR created
+        if: steps.versions.outputs.needs_update == 'true' && steps.check_pr.outputs.pr_exists == 'false'
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## ✨ Upstream Sync PR Created
+
+          **Status:** New PR created successfully
+
+          - **Previous version:** ${{ steps.versions.outputs.current_upstream }}
+          - **New version:** ${{ steps.versions.outputs.latest_upstream }}
+          - **Update type:** ${{ steps.versions.outputs.update_type }}
+          - **PR URL:** ${{ steps.create_pr.outputs.pr_url }}
+
+          ### Next Steps
+          1. Review the upstream changes
+          2. Test compatibility with existing integrations
+          3. Merge the PR when ready
+          4. Create a new release tag using the \`tag-semver\` workflow
+
+          [View Pull Request](${{ steps.create_pr.outputs.pr_url }})
+          EOF
+

@@ -7,7 +7,7 @@ on:
         description: "Tagging method to use"
         required: true
         type: choice
-        options: [major, minor, patch, alpha, rc, custom]
+        options: [next, major, minor, patch, alpha, rc, custom]
       custom:
         description: "Custom tag, if the default doesn't suffice. Must also use method 'custom'."
         required: false
@@ -23,10 +23,53 @@ on:
 
 jobs:
   tag-semver:
-    uses: lrstanley/.github/.github/workflows/tag-semver.yml@master
-    secrets: inherit
-    with:
-      method: ${{ github.event.inputs.method }}
-      ref: ${{ github.event.inputs.ref }}
-      custom: ${{ github.event.inputs.custom }}
-      annotation: ${{ github.event.inputs.annotation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.ref }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - run: git fetch --force --tags
+
+      - name: Calculate next version
+        id: version
+        run: ./.github/scripts/get-semver-tag.sh
+        env:
+          METHOD: ${{ github.event.inputs.method }}
+          CUSTOM: ${{ github.event.inputs.custom }}
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          BASE_VERSION="${{ steps.version.outputs.base_version }}"
+          UPSTREAM_VERSION="${{ steps.version.outputs.upstream_version }}"
+
+          if [ -n "${{ github.event.inputs.annotation }}" ]; then
+            ANNOTATION="${{ github.event.inputs.annotation }}"
+          else
+            ANNOTATION="Release ${BASE_VERSION}, based on upstream v${UPSTREAM_VERSION}"
+          fi
+
+          git tag -a "${TAG}" -m "${ANNOTATION}"
+          git push origin "${TAG}"
+
+          # Create Job Summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🏷️ Version Tag Created
+
+          **Tag:** \`${TAG}\`
+          **Version:** \`${BASE_VERSION}\`
+          **Upstream:** \`v${UPSTREAM_VERSION}\`
+          **Method:** \`${{ github.event.inputs.method }}\`
+
+          The new release tag has been created and pushed successfully.
+          EOF

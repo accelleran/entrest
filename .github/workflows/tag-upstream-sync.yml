@@ -1,0 +1,69 @@
+name: Tag Upstream Sync
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  tag-on-merge:
+    # Only run if PR was merged (not just closed) and has the upstream-sync label
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'upstream-sync')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create upstream sync tracking tag
+        env:
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # Extract upstream version from branch name (e.g., sync-upstream-v1.0.2 -> v1.0.2)
+          UPSTREAM_VERSION=$(echo "$PR_BRANCH" | sed -E 's/sync-upstream-(v[0-9]+\.[0-9]+\.[0-9]+)$/\1/')
+
+          if [ -z "$UPSTREAM_VERSION" ]; then
+            echo "Error: Could not extract upstream version from branch name: $PR_BRANCH"
+            exit 1
+          fi
+
+          echo "Upstream version: $UPSTREAM_VERSION"
+
+          # Create upstream sync tracking tag (lightweight)
+          SYNC_TAG="upstream-sync/${UPSTREAM_VERSION}"
+          echo "Creating tag: $SYNC_TAG"
+          git tag "$SYNC_TAG"
+          git push origin "$SYNC_TAG"
+
+          echo "✅ Tracking tag $SYNC_TAG created"
+
+      - name: Create summary
+        env:
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          UPSTREAM_VERSION=$(echo "$PR_BRANCH" | sed -E 's/sync-upstream-(v[0-9]+\.[0-9]+\.[0-9]+)$/\1/')
+          SYNC_TAG="upstream-sync/${UPSTREAM_VERSION}"
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🏷️ Upstream Sync Tracked
+
+          **Upstream version:** ${UPSTREAM_VERSION}
+          **Tracking tag:** ${SYNC_TAG}
+
+          A tracking tag has been created to record this upstream sync.
+
+          ### Next Steps
+          When ready to create a release, run the \`tag-semver\` workflow to generate a version tag with \`+upstream.${UPSTREAM_VERSION#v}\` metadata.
+          EOF
+
