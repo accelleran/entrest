@@ -19,17 +19,50 @@ on:
 
 jobs:
   go-test:
-    uses: lrstanley/.github/.github/workflows/lang-go-test-matrix.yml@master
-    secrets: inherit
-    permissions:
-      contents: read
-    with: { num-minor: 1, num-patch: 2 }
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run tests
+        run: go test -v -race -timeout 5m ./...
+
+  go-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run tests with coverage
+        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout 5m ./...
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.txt
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
   go-lint:
-    uses: lrstanley/.github/.github/workflows/lang-go-lint.yml@master
-    secrets: inherit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
-      checks: write
       contents: read
       pull-requests: read
-      security-events: write
-      statuses: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          only-new-issues: true
