@@ -1,0 +1,57 @@
+#!/bin/bash -eux
+# shellcheck disable=SC2155,SC2181
+
+set -o pipefail
+export BASE="$(readlink -f "$(dirname "$0")/..")"
+export BIN_DIR="${BASE}/.bin"
+
+"${BASE}/scripts/install-svu.sh"
+
+# Add local bin to PATH
+export PATH="${BIN_DIR}:${PATH}"
+
+git config user.name "github-actions"
+git config user.email "github-actions@github.com"
+
+TAG_ARGS=()
+
+if [ -n "${ANNOTATION:-}" ]; then
+	TAG_ARGS+=("--message" "$ANNOTATION")
+fi
+
+case "$METHOD" in
+	next | major | minor | patch)
+		git tag "${TAG_ARGS[@]}" "$(svu "$METHOD")"
+		;;
+	alpha | rc)
+		CURRENT=$(svu current --tag-mode=all-branches)
+		if [ "$?" != 0 ]; then
+			echo "error: svu unable to get current tag"
+			exit 1
+		fi
+
+		BUILD="next.$(git rev-parse --short HEAD)"
+		read -r PR_TYPE REV <<< "$(sed -rn 's:^v?[0-9]+\.[0-9]+\.[0-9]+-(alpha|rc)\.([0-9]+)(\+.*)?$:\1 \2:p' <<< "$CURRENT")"
+
+		if [ -z "$PR_TYPE" ] || [ -z "$REV" ] || [ "$PR_TYPE" != "$METHOD" ]; then
+			REV=0
+			PR_TYPE="$METHOD"
+			METHOD="patch"
+		else
+			REV=$((REV + 1))
+			METHOD="current"
+		fi
+
+		git tag "${TAG_ARGS[@]}" "$(svu "$METHOD" --tag-mode=all-branches --no-metadata)-${PR_TYPE}.${REV}+${BUILD}"
+		;;
+	custom)
+		git tag "${TAG_ARGS[@]}" "$CUSTOM"
+		;;
+	*)
+		echo "error: unknown method"
+		exit 1
+		;;
+esac
+
+git push --tags
+
