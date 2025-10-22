@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
@@ -21,6 +22,7 @@ type FollowsCreate struct {
 	config
 	mutation *FollowsMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetFollowedAt sets the "followed_at" field.
@@ -139,6 +141,7 @@ func (_c *FollowsCreate) createSpec() (*Follows, *sqlgraph.CreateSpec) {
 		_node = &Follows{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(follows.Table, nil)
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.FollowedAt(); ok {
 		_spec.SetField(follows.FieldFollowedAt, field.TypeTime, value)
 		_node.FollowedAt = value
@@ -180,11 +183,194 @@ func (_c *FollowsCreate) createSpec() (*Follows, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Follows.Create().
+//		SetFollowedAt(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.FollowsUpsert) {
+//			SetFollowedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *FollowsCreate) OnConflict(opts ...sql.ConflictOption) *FollowsUpsertOne {
+	_c.conflict = opts
+	return &FollowsUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Follows.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *FollowsCreate) OnConflictColumns(columns ...string) *FollowsUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &FollowsUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// FollowsUpsertOne is the builder for "upsert"-ing
+	//  one Follows node.
+	FollowsUpsertOne struct {
+		create *FollowsCreate
+	}
+
+	// FollowsUpsert is the "OnConflict" setter.
+	FollowsUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetFollowedAt sets the "followed_at" field.
+func (u *FollowsUpsert) SetFollowedAt(v time.Time) *FollowsUpsert {
+	u.Set(follows.FieldFollowedAt, v)
+	return u
+}
+
+// UpdateFollowedAt sets the "followed_at" field to the value that was provided on create.
+func (u *FollowsUpsert) UpdateFollowedAt() *FollowsUpsert {
+	u.SetExcluded(follows.FieldFollowedAt)
+	return u
+}
+
+// SetUserID sets the "user_id" field.
+func (u *FollowsUpsert) SetUserID(v uuid.UUID) *FollowsUpsert {
+	u.Set(follows.FieldUserID, v)
+	return u
+}
+
+// UpdateUserID sets the "user_id" field to the value that was provided on create.
+func (u *FollowsUpsert) UpdateUserID() *FollowsUpsert {
+	u.SetExcluded(follows.FieldUserID)
+	return u
+}
+
+// SetPetID sets the "pet_id" field.
+func (u *FollowsUpsert) SetPetID(v int) *FollowsUpsert {
+	u.Set(follows.FieldPetID, v)
+	return u
+}
+
+// UpdatePetID sets the "pet_id" field to the value that was provided on create.
+func (u *FollowsUpsert) UpdatePetID() *FollowsUpsert {
+	u.SetExcluded(follows.FieldPetID)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.Follows.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *FollowsUpsertOne) UpdateNewValues() *FollowsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Follows.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *FollowsUpsertOne) Ignore() *FollowsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *FollowsUpsertOne) DoNothing() *FollowsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the FollowsCreate.OnConflict
+// documentation for more info.
+func (u *FollowsUpsertOne) Update(set func(*FollowsUpsert)) *FollowsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&FollowsUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetFollowedAt sets the "followed_at" field.
+func (u *FollowsUpsertOne) SetFollowedAt(v time.Time) *FollowsUpsertOne {
+	return u.Update(func(s *FollowsUpsert) {
+		s.SetFollowedAt(v)
+	})
+}
+
+// UpdateFollowedAt sets the "followed_at" field to the value that was provided on create.
+func (u *FollowsUpsertOne) UpdateFollowedAt() *FollowsUpsertOne {
+	return u.Update(func(s *FollowsUpsert) {
+		s.UpdateFollowedAt()
+	})
+}
+
+// SetUserID sets the "user_id" field.
+func (u *FollowsUpsertOne) SetUserID(v uuid.UUID) *FollowsUpsertOne {
+	return u.Update(func(s *FollowsUpsert) {
+		s.SetUserID(v)
+	})
+}
+
+// UpdateUserID sets the "user_id" field to the value that was provided on create.
+func (u *FollowsUpsertOne) UpdateUserID() *FollowsUpsertOne {
+	return u.Update(func(s *FollowsUpsert) {
+		s.UpdateUserID()
+	})
+}
+
+// SetPetID sets the "pet_id" field.
+func (u *FollowsUpsertOne) SetPetID(v int) *FollowsUpsertOne {
+	return u.Update(func(s *FollowsUpsert) {
+		s.SetPetID(v)
+	})
+}
+
+// UpdatePetID sets the "pet_id" field to the value that was provided on create.
+func (u *FollowsUpsertOne) UpdatePetID() *FollowsUpsertOne {
+	return u.Update(func(s *FollowsUpsert) {
+		s.UpdatePetID()
+	})
+}
+
+// Exec executes the query.
+func (u *FollowsUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for FollowsCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *FollowsUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // FollowsCreateBulk is the builder for creating many Follows entities in bulk.
 type FollowsCreateBulk struct {
 	config
 	err      error
 	builders []*FollowsCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Follows entities in the database.
@@ -214,6 +400,7 @@ func (_c *FollowsCreateBulk) Save(ctx context.Context) ([]*Follows, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -259,6 +446,152 @@ func (_c *FollowsCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *FollowsCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Follows.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.FollowsUpsert) {
+//			SetFollowedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *FollowsCreateBulk) OnConflict(opts ...sql.ConflictOption) *FollowsUpsertBulk {
+	_c.conflict = opts
+	return &FollowsUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Follows.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *FollowsCreateBulk) OnConflictColumns(columns ...string) *FollowsUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &FollowsUpsertBulk{
+		create: _c,
+	}
+}
+
+// FollowsUpsertBulk is the builder for "upsert"-ing
+// a bulk of Follows nodes.
+type FollowsUpsertBulk struct {
+	create *FollowsCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Follows.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *FollowsUpsertBulk) UpdateNewValues() *FollowsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Follows.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *FollowsUpsertBulk) Ignore() *FollowsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *FollowsUpsertBulk) DoNothing() *FollowsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the FollowsCreateBulk.OnConflict
+// documentation for more info.
+func (u *FollowsUpsertBulk) Update(set func(*FollowsUpsert)) *FollowsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&FollowsUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetFollowedAt sets the "followed_at" field.
+func (u *FollowsUpsertBulk) SetFollowedAt(v time.Time) *FollowsUpsertBulk {
+	return u.Update(func(s *FollowsUpsert) {
+		s.SetFollowedAt(v)
+	})
+}
+
+// UpdateFollowedAt sets the "followed_at" field to the value that was provided on create.
+func (u *FollowsUpsertBulk) UpdateFollowedAt() *FollowsUpsertBulk {
+	return u.Update(func(s *FollowsUpsert) {
+		s.UpdateFollowedAt()
+	})
+}
+
+// SetUserID sets the "user_id" field.
+func (u *FollowsUpsertBulk) SetUserID(v uuid.UUID) *FollowsUpsertBulk {
+	return u.Update(func(s *FollowsUpsert) {
+		s.SetUserID(v)
+	})
+}
+
+// UpdateUserID sets the "user_id" field to the value that was provided on create.
+func (u *FollowsUpsertBulk) UpdateUserID() *FollowsUpsertBulk {
+	return u.Update(func(s *FollowsUpsert) {
+		s.UpdateUserID()
+	})
+}
+
+// SetPetID sets the "pet_id" field.
+func (u *FollowsUpsertBulk) SetPetID(v int) *FollowsUpsertBulk {
+	return u.Update(func(s *FollowsUpsert) {
+		s.SetPetID(v)
+	})
+}
+
+// UpdatePetID sets the "pet_id" field to the value that was provided on create.
+func (u *FollowsUpsertBulk) UpdatePetID() *FollowsUpsertBulk {
+	return u.Update(func(s *FollowsUpsert) {
+		s.UpdatePetID()
+	})
+}
+
+// Exec executes the query.
+func (u *FollowsUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the FollowsCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for FollowsCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *FollowsUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

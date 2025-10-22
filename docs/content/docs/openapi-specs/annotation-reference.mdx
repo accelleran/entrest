@@ -644,16 +644,24 @@ func (Pet) Fields() []ent.Field {
 
 ##### Example
 
-```go title="internal/database/schema/schema_pet.go" ins={3-6}
+```go title="internal/database/schema/schema_pet.go" ins={3-7}
 func (Pet) Annotations() []ent.Annotation {
     return []ent.Annotation{
         entrest.WithIncludeOperations(
             entrest.OperationCreate,
+            entrest.OperationUpsert, // or OperationCreateOrReplace
             entrest.OperationDelete,
         ),
     }
 }
 ```
+
+:::tip[Enabling Upsert & Replace Operations]
+To use `OperationUpsert` or `OperationCreateOrReplace`, you must enable Ent's upsert feature and
+include all operations you want (since `WithIncludeOperations` replaces the defaults). See the
+[Upsert & Replace Operations](/entrest/openapi-specs/upsert-operations/) guide for detailed
+requirements and examples.
+:::
 
 ### `WithExcludeOperations`
 
@@ -663,11 +671,12 @@ func (Pet) Annotations() []ent.Annotation {
 
 ##### Example
 
-```go title="internal/database/schema/schema_pet.go" ins={3-6}
+```go title="internal/database/schema/schema_pet.go" ins={3-7}
 func (Pet) Annotations() []ent.Annotation {
     return []ent.Annotation{
         entrest.WithExcludeOperations(
             entrest.OperationCreate,
+            entrest.OperationUpsert, // or OperationCreateOrReplace
             entrest.OperationDelete,
         ),
     }

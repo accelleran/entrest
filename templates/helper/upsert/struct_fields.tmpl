@@ -1,0 +1,57 @@
+{{- /*
+  Copyright (c) Accelleran nv. All rights reserved. Use of
+  this source code is governed by the MIT license that can be found in
+  the LICENSE file.
+*/ -}}
+
+{{- /* Generates the struct fields for an upsert/replace params struct */ -}}
+{{- /* Usage: template "helper/upsert/struct-fields" dict "Type" $t "Operation" "upsert" "Config" $.Annotations.RestConfig */ -}}
+{{- define "helper/upsert/struct-fields" }}
+    {{- $t := .Type }}
+    {{- $operation := .Operation }}
+    {{- $config := .Config }}
+
+    {{- range $f := $t.Fields }}
+        {{- if or (($f|getAnnotation).GetSkip $config) $f.Annotations.Rest.ReadOnly }}{{ continue }}{{ end -}}
+
+        {{- template "helper/rest/fields/comment" $f }}
+        {{- if or $f.Optional $f.Default }}
+            {{- if or (hasPrefix $f.Type.Ident "[]") (hasPrefix $f.Type.Ident "*") $f.IsBytes }}
+                {{ $f.StructField }} {{ $f.Type }} {{ template "helper/rest/fields/tag" (dict "Field" $f) }}
+            {{- else }}
+                {{ $f.StructField }} *{{ $f.Type }} {{ template "helper/rest/fields/tag" (dict "Field" $f) }}
+            {{- end }}
+        {{- else }}
+            {{ $f.StructField }} {{ $f.Type }} {{ template "helper/rest/fields/tag" (dict "Field" $f) }}
+        {{- end }}
+    {{- end }}
+
+    {{- range $e := $t.Edges }}
+        {{- if or
+            (($e|getAnnotation).GetSkip $config)
+            $e.Annotations.Rest.ReadOnly
+            (not (or (($e|getAnnotation).HasOperation $config "upsert") (($e|getAnnotation).HasOperation $config "replace")))
+            (not $e.Type.ID)
+        }}
+            {{- continue }}
+        {{ end -}}
+
+        {{- $f := $e.Field }}
+        {{- if $f }}
+            {{- if or (not (($f|getAnnotation).GetSkip $config)) $f.Annotations.Rest.ReadOnly }}{{ continue }}{{ end -}}
+
+            {{- template "helper/rest/fields/comment" $f }}
+            {{- if $f.Nillable }}
+                {{ $f.StructField }} Option[{{ $f.Type }}] {{ template "helper/rest/fields/tag" (dict "Field" $f) }}
+            {{- else if or $f.Default $f.Optional }}
+                {{ $f.StructField }} *{{ $f.Type }} {{ template "helper/rest/fields/tag" (dict "Field" $f) }}
+            {{- else }}
+                {{ $f.StructField }} {{ $f.Type }} {{ template "helper/rest/fields/tag" (dict "Field" $f) }}
+            {{- end }}
+        {{- else }}
+            {{- /* edge.From without explicit backing field - skip as Ent doesn't generate setter methods for these in PostUpsert */ -}}
+            {{- continue }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+
