@@ -18,6 +18,8 @@ const (
 	FieldName = "name"
 	// FieldNicknames holds the string denoting the nicknames field in the database.
 	FieldNicknames = "nicknames"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldAge holds the string denoting the age field in the database.
 	FieldAge = "age"
 	// FieldType holds the string denoting the type field in the database.
@@ -67,6 +69,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldNicknames,
+	FieldDescription,
 	FieldAge,
 	FieldType,
 }
@@ -148,6 +151,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByAge orders the results by the age field.

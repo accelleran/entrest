@@ -37,14 +37,26 @@ const (
 	OperationRead Operation = "read"
 	// OperationUpdate represents the update operation (method: PATCH).
 	OperationUpdate Operation = "update"
+	// OperationUpsert represents the upsert operation with partial updates (method: PUT).
+	// When updating an existing entity, only provided fields are updated; unprovided optional
+	// fields retain their existing values (PATCH-like semantics via PUT).
+	// Note: This operation requires the ID field to be explicitly defined in the schema's Fields().
+	// This enables Ent to generate the SetID() method, which is required for upsert.
+	OperationUpsert Operation = "upsert"
+	// OperationCreateOrReplace represents the upsert operation with full replacement (method: PUT).
+	// When updating an existing entity, unprovided optional/nullable fields are cleared (set to nil),
+	// implementing true HTTP PUT semantics of "create or replace the entire resource".
+	// Note: This operation requires the ID field to be explicitly defined in the schema's Fields().
+	// Cannot be used together with OperationUpsert on the same entity.
+	OperationCreateOrReplace Operation = "replace"
 	// OperationDelete represents the delete operation (method: DELETE).
 	OperationDelete Operation = "delete"
 	// OperationList represents the list operation (method: GET).
 	OperationList Operation = "list"
 )
 
-// AllOperations holds a list of all supported operations.
-var AllOperations = []Operation{OperationCreate, OperationRead, OperationUpdate, OperationDelete, OperationList}
+// DefaultOperations is the default list of operations to generate.
+var DefaultOperations = []Operation{OperationCreate, OperationRead, OperationUpdate, OperationDelete, OperationList}
 
 const (
 	defaultMinItemsPerPage = 1

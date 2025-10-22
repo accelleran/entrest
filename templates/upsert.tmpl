@@ -1,0 +1,57 @@
+{{- /*
+  Copyright (c) Accelleran nv. All rights reserved. Use of
+  this source code is governed by the MIT license that can be found in
+  the LICENSE file.
+*/ -}}
+{{- define "rest/upsert" }}
+{{- with extend $ "Package" "rest" }}{{ template "header" . }}{{ end }}
+
+import (
+    {{- template "helper/rest/standard-imports" . }}
+    {{- template "helper/rest/schema-imports" . }}
+)
+
+{{- range $t := $.Nodes }}
+    {{- $hasUpsert := (($t|getAnnotation).HasOperation $.Annotations.RestConfig "upsert") }}
+    {{- if or
+        (($t|getAnnotation).GetSkip $.Annotations.RestConfig)
+        (not $t.ID)
+        (not $hasUpsert)
+    }}
+        {{- continue }}
+    {{ end }}
+
+    // Upsert{{ $t.Name|zsingular }}Params defines parameters for upserting a {{ $t.Name|zsingular }} via a PUT request.
+    // Only includes fields/edges not excluded from upsert operations.
+    // Upsert performs partial updates: only provided fields are updated, unprovided optional fields retain their existing values.
+    type Upsert{{ $t.Name|zsingular }}Params struct {
+    {{- template "helper/upsert/struct-fields" dict "Type" $t "Operation" "upsert" "Config" $.Annotations.RestConfig }}
+    }
+
+    func (u *Upsert{{ $t.Name|zsingular }}Params) ApplyInputs(builder *ent.{{ $t.Name }}Create) *ent.{{ $t.Name }}Create {
+    {{- template "helper/upsert/apply-inputs" dict "Type" $t "Operation" "upsert" "Receiver" "u" "Config" $.Annotations.RestConfig }}
+    }
+
+    // Exec wraps all logic (mapping all provided values to the builder), upserts the entity
+    // (creating it if it doesn't exist or updating it if it does), and does another query
+    // (using provided query as base) to get the entity, with all eager loaded edges.
+    func (u *Upsert{{ $t.Name|zsingular }}Params) Exec(ctx context.Context, id {{ $t.ID.Type }}, builder *ent.{{ $t.Name }}Create, query *ent.{{ $t.Name }}Query) (*ent.{{ $t.Name }}, error) {
+        // Set the ID for the upsert operation
+        builder.SetID(id)
+
+        // Apply all inputs from the params
+        builder = u.ApplyInputs(builder)
+
+        // Perform upsert with OnConflict - partial update mode (PATCH-like semantics via PUT)
+        // Only provided fields are updated; unprovided optional fields retain their existing values
+        err := builder.OnConflictColumns({{ $t.Package }}.{{ $t.ID.Constant }}).UpdateNewValues().Exec(ctx)
+        if err != nil {
+            return nil, err
+        }
+
+        // Fetch the entity with eager-loaded edges
+        return EagerLoad{{ $t.Name|zsingular }}(query.Where({{ $t.Package }}.ID(id))).Only(ctx)
+    }
+{{- end }}{{/* end range */}}
+{{- end }}{{/* end template */}}
+

@@ -63,6 +63,26 @@ func (_u *PetUpdate) ClearNicknames() *PetUpdate {
 	return _u
 }
 
+// SetDescription sets the "description" field.
+func (_u *PetUpdate) SetDescription(v string) *PetUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *PetUpdate) SetNillableDescription(v *string) *PetUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
+	}
+	return _u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (_u *PetUpdate) ClearDescription() *PetUpdate {
+	_u.mutation.ClearDescription()
+	return _u
+}
+
 // SetAge sets the "age" field.
 func (_u *PetUpdate) SetAge(v int) *PetUpdate {
 	_u.mutation.ResetAge()
@@ -304,6 +324,12 @@ func (_u *PetUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.NicknamesCleared() {
 		_spec.ClearField(pet.FieldNicknames, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(pet.FieldDescription, field.TypeString, value)
+	}
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(pet.FieldDescription, field.TypeString)
+	}
 	if value, ok := _u.mutation.Age(); ok {
 		_spec.SetField(pet.FieldAge, field.TypeInt, value)
 	}
@@ -538,6 +564,26 @@ func (_u *PetUpdateOne) AppendNicknames(v []string) *PetUpdateOne {
 // ClearNicknames clears the value of the "nicknames" field.
 func (_u *PetUpdateOne) ClearNicknames() *PetUpdateOne {
 	_u.mutation.ClearNicknames()
+	return _u
+}
+
+// SetDescription sets the "description" field.
+func (_u *PetUpdateOne) SetDescription(v string) *PetUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *PetUpdateOne) SetNillableDescription(v *string) *PetUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
+	}
+	return _u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (_u *PetUpdateOne) ClearDescription() *PetUpdateOne {
+	_u.mutation.ClearDescription()
 	return _u
 }
 
@@ -811,6 +857,12 @@ func (_u *PetUpdateOne) sqlSave(ctx context.Context) (_node *Pet, err error) {
 	}
 	if _u.mutation.NicknamesCleared() {
 		_spec.ClearField(pet.FieldNicknames, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(pet.FieldDescription, field.TypeString, value)
+	}
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(pet.FieldDescription, field.TypeString)
 	}
 	if value, ok := _u.mutation.Age(); ok {
 		_spec.SetField(pet.FieldAge, field.TypeInt, value)

@@ -23,6 +23,8 @@ type Pet struct {
 	Name string `json:"name"`
 	// Nicknames holds the value of the "nicknames" field.
 	Nicknames []string `json:"nicknames"`
+	// Optional description of the pet.
+	Description *string `json:"description"`
 	// Age holds the value of the "age" field.
 	Age int `json:"age"`
 	// Type holds the value of the "type" field.
@@ -107,7 +109,7 @@ func (*Pet) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case pet.FieldID, pet.FieldAge:
 			values[i] = new(sql.NullInt64)
-		case pet.FieldName, pet.FieldType:
+		case pet.FieldName, pet.FieldDescription, pet.FieldType:
 			values[i] = new(sql.NullString)
 		case pet.ForeignKeys[0]: // user_pets
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -145,6 +147,13 @@ func (_m *Pet) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.Nicknames); err != nil {
 					return fmt.Errorf("unmarshal field nicknames: %w", err)
 				}
+			}
+		case pet.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				_m.Description = new(string)
+				*_m.Description = value.String
 			}
 		case pet.FieldAge:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -231,6 +240,11 @@ func (_m *Pet) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("nicknames=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Nicknames))
+	builder.WriteString(", ")
+	if v := _m.Description; v != nil {
+		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("age=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Age))

@@ -68,6 +68,12 @@ func EagerLoadSetting(query *ent.SettingsQuery) *ent.SettingsQuery {
 	)
 }
 
+// EagerLoadSkipped eager-loads the edges of a Skipped entity, if any edges
+// were requested to be eager-loaded, based off associated annotations.
+func EagerLoadSkipped(query *ent.SkippedQuery) *ent.SkippedQuery {
+	return query
+}
+
 // EagerLoadUser eager-loads the edges of a User entity, if any edges
 // were requested to be eager-loaded, based off associated annotations.
 func EagerLoadUser(query *ent.UserQuery) *ent.UserQuery {

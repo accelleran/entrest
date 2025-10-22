@@ -231,6 +231,72 @@ func GetSpecType(t *gen.Type, op Operation) (*ogen.Spec, error) { // nolint:funl
 				{Ref: "#/components/parameters/" + Singularize(t.Name) + "ID"},
 			},
 		}
+	case OperationUpsert:
+		oper := &ogen.Operation{
+			Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
+			Summary: cmp.Or(
+				ta.GetOperationSummary(op),
+				"Upsert a "+CamelCase(entityName),
+			),
+			Description: cmp.Or(
+				ta.GetOperationDescription(op),
+				fmt.Sprintf("Create a new %s entity, or partially update an existing one if it already exists (unprovided optional fields are preserved). %s", entityName, eagerLoadDepthMessage),
+			),
+			OperationID: GetOperationIDName(op, t, nil),
+			Deprecated:  ta.Deprecated,
+			Parameters:  []*ogen.Parameter{},
+			RequestBody: ogen.NewRequestBody().
+				SetRequired(true).
+				SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Upsert"}),
+			Responses: ogen.Responses{
+				strconv.Itoa(http.StatusOK): ogen.NewResponse().
+					SetDescription(fmt.Sprintf("The upserted %s entity.", entityName)).
+					SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Read"}),
+			},
+		}
+
+		spec.Paths[GetPathName(op, t, nil, true)] = &ogen.PathItem{
+			Summary:     fmt.Sprintf("Operate on a single %s entity", entityName),
+			Description: fmt.Sprintf("Operate on a single %s entity by its ID.", entityName),
+			Put:         oper,
+			Parameters: []*ogen.Parameter{
+				{Ref: "#/components/parameters/PrettyResponse"},
+				{Ref: "#/components/parameters/" + Singularize(t.Name) + "ID"},
+			},
+		}
+	case OperationCreateOrReplace:
+		oper := &ogen.Operation{
+			Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
+			Summary: cmp.Or(
+				ta.GetOperationSummary(op),
+				"Replace a "+CamelCase(entityName),
+			),
+			Description: cmp.Or(
+				ta.GetOperationDescription(op),
+				fmt.Sprintf("Create a new %s entity, or fully replace an existing one if it already exists (unprovided optional fields are cleared). %s", entityName, eagerLoadDepthMessage),
+			),
+			OperationID: GetOperationIDName(op, t, nil),
+			Deprecated:  ta.Deprecated,
+			Parameters:  []*ogen.Parameter{},
+			RequestBody: ogen.NewRequestBody().
+				SetRequired(true).
+				SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Replace"}),
+			Responses: ogen.Responses{
+				strconv.Itoa(http.StatusOK): ogen.NewResponse().
+					SetDescription(fmt.Sprintf("The replaced %s entity.", entityName)).
+					SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Read"}),
+			},
+		}
+
+		spec.Paths[GetPathName(op, t, nil, true)] = &ogen.PathItem{
+			Summary:     fmt.Sprintf("Operate on a single %s entity", entityName),
+			Description: fmt.Sprintf("Operate on a single %s entity by its ID.", entityName),
+			Put:         oper,
+			Parameters: []*ogen.Parameter{
+				{Ref: "#/components/parameters/PrettyResponse"},
+				{Ref: "#/components/parameters/" + Singularize(t.Name) + "ID"},
+			},
+		}
 	case OperationRead:
 		oper := &ogen.Operation{
 			Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
@@ -746,7 +812,7 @@ func addGlobalErrorResponses(cfg *Config, spec *ogen.Spec, responses map[int]*og
 				switch {
 				case strings.HasPrefix(op.OperationID, "list") && k == http.StatusNotFound && !cfg.ListNotFound:
 					continue
-				case !strings.HasPrefix(op.OperationID, "create") && !strings.HasPrefix(op.OperationID, "update") && k == http.StatusConflict:
+				case !strings.HasPrefix(op.OperationID, "create") && !strings.HasPrefix(op.OperationID, "update") && !strings.HasPrefix(op.OperationID, "upsert") && k == http.StatusConflict:
 					continue
 				}
 
@@ -839,6 +905,10 @@ func GetOperationIDName(op Operation, t *gen.Type, e *gen.Edge) string {
 		return "create" + Singularize(t.Name)
 	case OperationUpdate:
 		return "update" + Singularize(t.Name)
+	case OperationUpsert:
+		return "upsert" + Singularize(t.Name)
+	case OperationCreateOrReplace:
+		return "replace" + Singularize(t.Name)
 	case OperationRead:
 		return "get" + Singularize(t.Name)
 	case OperationList:
@@ -869,7 +939,7 @@ func GetPathName(op Operation, t *gen.Type, e *gen.Edge, useUniqueID bool) strin
 	}
 
 	switch op {
-	case OperationRead, OperationUpdate, OperationDelete:
+	case OperationRead, OperationUpdate, OperationUpsert, OperationCreateOrReplace, OperationDelete:
 		return "/" + Pluralize(KebabCase(t.Name)) + "/" + id
 	case OperationCreate, OperationList:
 		return "/" + Pluralize(KebabCase(t.Name))

@@ -62,7 +62,7 @@ type UserEdges struct {
 	FollowedPets []*Pet `json:"followed_pets,omitempty"`
 	// Friends of the user.
 	Friends []*User `json:"friends,omitempty"`
-	// Posts holds the value of the posts edge.
+	// Posts authored by the user.
 	Posts []*Post `json:"posts,omitempty"`
 	// Following holds the value of the following edge.
 	Following []*Follows `json:"following,omitempty"`
