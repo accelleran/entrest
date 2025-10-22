@@ -2430,6 +2430,65 @@
                     }
                 }
             },
+            "put": {
+                "tags": [
+                    "Pets"
+                ],
+                "summary": "Replace a pet",
+                "description": "Create a new Pet entity, or fully replace an existing one if it already exists (unprovided optional fields are cleared). If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
+                "operationId": "replacePet",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PetReplace"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "The replaced Pet entity.",
+                        "headers": {
+                            "X-Ratelimit-Limit": {
+                                "$ref": "#/components/headers/X-Ratelimit-Limit"
+                            },
+                            "X-Ratelimit-Remaining": {
+                                "$ref": "#/components/headers/X-Ratelimit-Remaining"
+                            },
+                            "X-Ratelimit-Reset": {
+                                "$ref": "#/components/headers/X-Ratelimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PetRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ErrorBadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/ErrorUnauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/ErrorForbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ErrorNotFound"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/ErrorTooManyRequests"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/ErrorInternalServerError"
+                    }
+                }
+            },
             "delete": {
                 "tags": [
                     "Pets"
@@ -5797,6 +5856,68 @@
                     }
                 }
             },
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Upsert a user",
+                "description": "Create a new User entity, or partially update an existing one if it already exists (unprovided optional fields are preserved). If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
+                "operationId": "upsertUser",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserUpsert"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "The upserted User entity.",
+                        "headers": {
+                            "X-Ratelimit-Limit": {
+                                "$ref": "#/components/headers/X-Ratelimit-Limit"
+                            },
+                            "X-Ratelimit-Remaining": {
+                                "$ref": "#/components/headers/X-Ratelimit-Remaining"
+                            },
+                            "X-Ratelimit-Reset": {
+                                "$ref": "#/components/headers/X-Ratelimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ErrorBadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/ErrorUnauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/ErrorForbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ErrorNotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/ErrorConflict"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/ErrorTooManyRequests"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/ErrorInternalServerError"
+                    }
+                }
+            },
             "delete": {
                 "tags": [
                     "Users"
@@ -8890,6 +9011,11 @@
                             "type": "string"
                         }
                     },
+                    "description": {
+                        "description": "Optional description of the pet.",
+                        "type": "string",
+                        "nullable": true
+                    },
                     "age": {
                         "type": "integer",
                         "example": 2
@@ -8925,6 +9051,11 @@
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "description": {
+                        "description": "Optional description of the pet.",
+                        "type": "string",
+                        "nullable": true
                     },
                     "age": {
                         "type": "integer",
@@ -9021,6 +9152,39 @@
                     }
                 ]
             },
+            "PetReplace": {
+                "description": "A single Pet entity and the fields that can be created/updated.",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Kuro"
+                    },
+                    "nicknames": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "description": {
+                        "description": "Optional description of the pet.",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "age": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/PetTypeEnum"
+                    }
+                },
+                "required": [
+                    "name",
+                    "age",
+                    "type"
+                ]
+            },
             "PetSortableFields": {
                 "description": "All potential sortable fields for Pet entities.",
                 "type": "string",
@@ -9068,6 +9232,11 @@
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "description": {
+                        "description": "Optional description of the pet.",
+                        "type": "string",
+                        "nullable": true
                     },
                     "age": {
                         "type": "integer",
@@ -9775,6 +9944,67 @@
                         }
                     }
                 }
+            },
+            "UserUpsert": {
+                "description": "A single User entity and the fields that can be created/updated.",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the user.",
+                        "type": "string"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/UserTypeEnum"
+                    },
+                    "description": {
+                        "description": "Full name if USER, otherwise null.",
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Jon Smith"
+                    },
+                    "enabled": {
+                        "description": "If the user is still in the source system.",
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "email": {
+                        "description": "Email associated with the user. Note that not all users have an associated email address.",
+                        "type": "string",
+                        "nullable": true,
+                        "example": "John.Smith@example.com"
+                    },
+                    "avatar": {
+                        "description": "Avatar data for the user. This should generally only apply to the USER user type.",
+                        "type": "string",
+                        "format": "byte",
+                        "nullable": true
+                    },
+                    "password_hashed": {
+                        "description": "Hashed password for the user, this shouldn't be readable in the spec anywhere.",
+                        "type": "string"
+                    },
+                    "github_data": {
+                        "description": "The github user raw JSON data.",
+                        "type": "object",
+                        "additionalProperties": true
+                    },
+                    "any_data": {
+                        "description": "Any data that is not defined in the schema."
+                    },
+                    "profile_url": {
+                        "type": "string",
+                        "default": "http://127.0.0.1/"
+                    },
+                    "last_authenticated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "password_hashed"
+                ]
             }
         },
         "responses": {

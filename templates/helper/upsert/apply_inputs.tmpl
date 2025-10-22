@@ -1,0 +1,61 @@
+{{- /*
+  Copyright (c) Accelleran nv. All rights reserved. Use of
+  this source code is governed by the MIT license that can be found in
+  the LICENSE file.
+*/ -}}
+
+{{- /* Generates the ApplyInputs method body for upsert/replace params */ -}}
+{{- /* Usage: template "helper/upsert/apply-inputs" dict "Type" $t "Operation" "upsert" "Receiver" "u" "Config" $.Annotations.RestConfig */ -}}
+{{- define "helper/upsert/apply-inputs" }}
+    {{- $t := .Type }}
+    {{- $operation := .Operation }}
+    {{- $receiver := .Receiver }}
+    {{- $config := .Config }}
+
+    {{- range $f := $t.Fields }}
+        {{- if or (($f|getAnnotation).GetSkip $config) $f.Annotations.Rest.ReadOnly }}{{ continue }}{{ end }}
+        {{- if or $f.Optional $f.Default }}
+            if {{ $receiver }}.{{ $f.StructField }} != nil {
+                {{- if or (hasPrefix $f.Type.Ident "[]") (hasPrefix $f.Type.Ident "*") $f.IsBytes }}
+                    builder.Set{{ $f.StructField }}({{ $receiver }}.{{ $f.StructField }})
+                {{- else }}
+                    builder.Set{{ $f.StructField }}(*{{ $receiver }}.{{ $f.StructField }})
+                {{- end }}
+            }
+        {{- else }}
+            builder.Set{{ $f.StructField }}({{ $receiver }}.{{ $f.StructField }})
+        {{- end }}
+    {{- end }}
+
+    {{- range $e := $t.Edges }}
+        {{- if or
+            (($e|getAnnotation).GetSkip $config)
+            $e.Annotations.Rest.ReadOnly
+            (not (or (($e|getAnnotation).HasOperation $config "upsert") (($e|getAnnotation).HasOperation $config "replace")))
+            (not $e.Type.ID)
+        }}
+            {{- continue }}
+        {{ end -}}
+
+        {{- $f := $e.Field }}
+        {{- if $f }}
+            {{- if or (not (($f|getAnnotation).GetSkip $config)) $f.Annotations.Rest.ReadOnly }}{{ continue }}{{ end }}
+            {{- if $f.Nillable }}
+                if v, ok := {{ $receiver }}.{{ $f.StructField }}.Get(); ok {
+                    builder.Set{{ $f.StructField }}(v)
+                }
+            {{- else if or $f.Default $f.Optional }}
+                if {{ $receiver }}.{{ $f.StructField }} != nil {
+                    builder.Set{{ $f.StructField }}(*{{ $receiver }}.{{ $f.StructField }})
+                }
+            {{- else }}
+                builder.Set{{ $f.StructField }}({{ $receiver }}.{{ $f.StructField }})
+            {{- end }}
+        {{- else }}
+            {{- /* edge.From without explicit backing field - skip as Ent doesn't generate setter methods for these in PostUpsert */ -}}
+            {{- continue }}
+        {{- end }}
+    {{- end }}
+    return builder
+{{- end }}
+

@@ -297,3 +297,14 @@ func getPathMethods(t *testing.T, r *testSpecResult, endpoint string) (methods [
 	}
 	return methods
 }
+
+func TestValidation_UpsertAndCreateOrReplaceMutualExclusion(t *testing.T) {
+	t.Parallel()
+
+	_, err := buildSpec(t, &Config{
+		DefaultOperations: []Operation{OperationUpsert, OperationCreateOrReplace},
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot use both OperationUpsert and OperationCreateOrReplace on the same entity")
+}

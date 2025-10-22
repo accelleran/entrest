@@ -100,8 +100,10 @@ func (c *UpdateFriendshipParams) Exec(ctx context.Context, builder *ent.Friendsh
 type UpdatePetParams struct {
 	Name      Option[string]   `json:"name"`
 	Nicknames Option[[]string] `json:"nicknames,omitempty"`
-	Age       Option[int]      `json:"age"`
-	Type      Option[pet.Type] `json:"type"`
+	// Optional description of the pet.
+	Description Option[*string]  `json:"description,omitempty"`
+	Age         Option[int]      `json:"age"`
+	Type        Option[pet.Type] `json:"type"`
 	// Categories that the pet belongs to.
 	AddCategories Option[[]int] `json:"add_categories,omitempty"`
 	// Categories that the pet belongs to.
@@ -126,6 +128,13 @@ func (u *UpdatePetParams) ApplyInputs(builder *ent.PetUpdateOne) *ent.PetUpdateO
 	}
 	if v, ok := u.Nicknames.Get(); ok {
 		builder.SetNicknames(v)
+	}
+	if v, ok := u.Description.Get(); ok {
+		if v != nil {
+			builder.SetDescription(*v)
+		} else {
+			builder.ClearDescription()
+		}
 	}
 	if v, ok := u.Age.Get(); ok {
 		builder.SetAge(v)

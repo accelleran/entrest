@@ -254,6 +254,26 @@ func UseEntContext(db *ent.Client) func(next http.Handler) http.Handler {
             ) }}
         {{- end }}
 
+        {{- /* upsert nodes */}}
+        {{- if and $t.ID (($t|getAnnotation).HasOperation $t.Config.Annotations.RestConfig "upsert") }}
+            {{- template "helper/rest/server/endpoint" (dict
+                "Handler" $.Annotations.RestConfig.Handler
+                "Method" "PUT"
+                "Path" (getPathName "upsert" $t nil false)
+                "Func" (printf "ReqIDParam(s, OperationUpsert, s.%s)" (getOperationIDName "upsert" $t nil | zpascal))
+            ) }}
+        {{- end }}
+
+        {{- /* replace nodes */}}
+        {{- if and $t.ID (($t|getAnnotation).HasOperation $t.Config.Annotations.RestConfig "replace") }}
+            {{- template "helper/rest/server/endpoint" (dict
+                "Handler" $.Annotations.RestConfig.Handler
+                "Method" "PUT"
+                "Path" (getPathName "replace" $t nil false)
+                "Func" (printf "ReqIDParam(s, OperationCreateOrReplace, s.%s)" (getOperationIDName "replace" $t nil | zpascal))
+            ) }}
+        {{- end }}
+
         {{- /* delete nodes */}}
         {{- if and $t.ID (($t|getAnnotation).HasOperation $t.Config.Annotations.RestConfig "delete") }}
             {{- template "helper/rest/server/endpoint" (dict
@@ -343,6 +363,24 @@ func UseEntContext(db *ent.Client) func(next http.Handler) http.Handler {
         // {{ $opID }} maps to "PATCH {{ getPathName "update" $t nil false }}".
         func (s *Server) {{ $opID }}(r *http.Request, {{ $id }} {{ $t.ID.Type }}, p *Update{{ $t.Name|zsingular }}Params) (*ent.{{ $t.Name }}, error) {
             return p.Exec(r.Context(), s.db.{{ $t.Name }}.UpdateOneID({{ $id }}), s.db.{{ $t.Name }}.Query())
+        }
+    {{- end }}
+
+    {{- /* upsert nodes */}}
+    {{- if and $t.ID (($t|getAnnotation).HasOperation $t.Config.Annotations.RestConfig "upsert") }}
+        {{- $opID := getOperationIDName "upsert" $t nil | zpascal }}
+        // {{ $opID }} maps to "PUT {{ getPathName "upsert" $t nil false }}".
+        func (s *Server) {{ $opID }}(r *http.Request, {{ $id }} {{ $t.ID.Type }}, p *Upsert{{ $t.Name|zsingular }}Params) (*ent.{{ $t.Name }}, error) {
+            return p.Exec(r.Context(), {{ $id }}, s.db.{{ $t.Name }}.Create(), s.db.{{ $t.Name }}.Query())
+        }
+    {{- end }}
+
+    {{- /* replace nodes */}}
+    {{- if and $t.ID (($t|getAnnotation).HasOperation $t.Config.Annotations.RestConfig "replace") }}
+        {{- $opID := getOperationIDName "replace" $t nil | zpascal }}
+        // {{ $opID }} maps to "PUT {{ getPathName "replace" $t nil false }}".
+        func (s *Server) {{ $opID }}(r *http.Request, {{ $id }} {{ $t.ID.Type }}, p *Replace{{ $t.Name|zsingular }}Params) (*ent.{{ $t.Name }}, error) {
+            return p.Exec(r.Context(), {{ $id }}, s.db.{{ $t.Name }}.Create(), s.db.{{ $t.Name }}.Query())
         }
     {{- end }}
 

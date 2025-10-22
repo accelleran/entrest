@@ -43,6 +43,19 @@ const (
 	OperationRead Operation = "read"
 	// OperationUpdate represents the update operation (method: PATCH).
 	OperationUpdate Operation = "update"
+	// OperationUpsert represents the upsert operation with partial updates (method: PUT).
+	// When updating an existing entity, only provided fields are updated; unprovided optional
+	// fields retain their existing values (PATCH-like semantics via PUT).
+	// Note: This operation requires the ID field to be explicitly defined in the schema's Fields()
+	// method (or via a Mixin). This enables Ent to generate the SetID() method, which is required
+	// for upsert. Without an explicit ID field definition, compilation will fail.
+	OperationUpsert Operation = "upsert"
+	// OperationCreateOrReplace represents the upsert operation with full replacement (method: PUT).
+	// When updating an existing entity, unprovided optional/nullable fields are cleared (set to nil),
+	// implementing true HTTP PUT semantics of "create or replace the entire resource".
+	// Note: This operation requires the ID field to be explicitly defined in the schema's Fields()
+	// method (or via a Mixin). Cannot be used together with OperationUpsert on the same entity.
+	OperationCreateOrReplace Operation = "replace"
 	// OperationDelete represents the delete operation (method: DELETE).
 	OperationDelete Operation = "delete"
 	// OperationList represents the list operation (method: GET).
@@ -605,6 +618,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /pets/{id}/followed-by", ReqIDParam(s, OperationList, s.ListPetFollowedBys))
 	mux.HandleFunc("POST /pets", ReqParam(s, OperationCreate, s.CreatePet))
 	mux.HandleFunc("PATCH /pets/{id}", ReqIDParam(s, OperationUpdate, s.UpdatePet))
+	mux.HandleFunc("PUT /pets/{id}", ReqIDParam(s, OperationCreateOrReplace, s.ReplacePet))
 	mux.HandleFunc("DELETE /pets/{id}", ReqID(s, OperationDelete, s.DeletePet))
 	mux.HandleFunc("GET /posts", ReqParam(s, OperationList, s.ListPosts))
 	mux.HandleFunc("GET /posts/{id}", ReqID(s, OperationRead, s.GetPost))
@@ -625,6 +639,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /users/{id}/friendships", ReqIDParam(s, OperationList, s.ListUserFriendships))
 	mux.HandleFunc("POST /users", ReqParam(s, OperationCreate, s.CreateUser))
 	mux.HandleFunc("PATCH /users/{id}", ReqIDParam(s, OperationUpdate, s.UpdateUser))
+	mux.HandleFunc("PUT /users/{id}", ReqIDParam(s, OperationUpsert, s.UpsertUser))
 	mux.HandleFunc("DELETE /users/{id}", ReqID(s, OperationDelete, s.DeleteUser))
 
 	if !s.config.DisableSpecHandler {
@@ -766,6 +781,11 @@ func (s *Server) UpdatePet(r *http.Request, petID int, p *UpdatePetParams) (*ent
 	return p.Exec(r.Context(), s.db.Pet.UpdateOneID(petID), s.db.Pet.Query())
 }
 
+// ReplacePet maps to "PUT /pets/{id}".
+func (s *Server) ReplacePet(r *http.Request, petID int, p *ReplacePetParams) (*ent.Pet, error) {
+	return p.Exec(r.Context(), petID, s.db.Pet.Create(), s.db.Pet.Query())
+}
+
 // DeletePet maps to "DELETE /pets/{id}".
 func (s *Server) DeletePet(r *http.Request, petID int) (*struct{}, error) {
 	return nil, s.db.Pet.DeleteOneID(petID).Exec(r.Context())
@@ -864,6 +884,11 @@ func (s *Server) CreateUser(r *http.Request, p *CreateUserParams) (*ent.User, er
 // UpdateUser maps to "PATCH /users/{id}".
 func (s *Server) UpdateUser(r *http.Request, userID uuid.UUID, p *UpdateUserParams) (*ent.User, error) {
 	return p.Exec(r.Context(), s.db.User.UpdateOneID(userID), s.db.User.Query())
+}
+
+// UpsertUser maps to "PUT /users/{id}".
+func (s *Server) UpsertUser(r *http.Request, userID uuid.UUID, p *UpsertUserParams) (*ent.User, error) {
+	return p.Exec(r.Context(), userID, s.db.User.Create(), s.db.User.Query())
 }
 
 // DeleteUser maps to "DELETE /users/{id}".

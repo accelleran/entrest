@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/skipped"
@@ -17,6 +18,7 @@ type SkippedCreate struct {
 	config
 	mutation *SkippedMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetName sets the "name" field.
@@ -88,6 +90,7 @@ func (_c *SkippedCreate) createSpec() (*Skipped, *sqlgraph.CreateSpec) {
 		_node = &Skipped{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(skipped.Table, sqlgraph.NewFieldSpec(skipped.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(skipped.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -95,11 +98,160 @@ func (_c *SkippedCreate) createSpec() (*Skipped, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Skipped.Create().
+//		SetName(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.SkippedUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *SkippedCreate) OnConflict(opts ...sql.ConflictOption) *SkippedUpsertOne {
+	_c.conflict = opts
+	return &SkippedUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Skipped.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *SkippedCreate) OnConflictColumns(columns ...string) *SkippedUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &SkippedUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// SkippedUpsertOne is the builder for "upsert"-ing
+	//  one Skipped node.
+	SkippedUpsertOne struct {
+		create *SkippedCreate
+	}
+
+	// SkippedUpsert is the "OnConflict" setter.
+	SkippedUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetName sets the "name" field.
+func (u *SkippedUpsert) SetName(v string) *SkippedUpsert {
+	u.Set(skipped.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *SkippedUpsert) UpdateName() *SkippedUpsert {
+	u.SetExcluded(skipped.FieldName)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.Skipped.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *SkippedUpsertOne) UpdateNewValues() *SkippedUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Skipped.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *SkippedUpsertOne) Ignore() *SkippedUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *SkippedUpsertOne) DoNothing() *SkippedUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the SkippedCreate.OnConflict
+// documentation for more info.
+func (u *SkippedUpsertOne) Update(set func(*SkippedUpsert)) *SkippedUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&SkippedUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *SkippedUpsertOne) SetName(v string) *SkippedUpsertOne {
+	return u.Update(func(s *SkippedUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *SkippedUpsertOne) UpdateName() *SkippedUpsertOne {
+	return u.Update(func(s *SkippedUpsert) {
+		s.UpdateName()
+	})
+}
+
+// Exec executes the query.
+func (u *SkippedUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for SkippedCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *SkippedUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *SkippedUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *SkippedUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // SkippedCreateBulk is the builder for creating many Skipped entities in bulk.
 type SkippedCreateBulk struct {
 	config
 	err      error
 	builders []*SkippedCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Skipped entities in the database.
@@ -128,6 +280,7 @@ func (_c *SkippedCreateBulk) Save(ctx context.Context) ([]*Skipped, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -178,6 +331,124 @@ func (_c *SkippedCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *SkippedCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Skipped.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.SkippedUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *SkippedCreateBulk) OnConflict(opts ...sql.ConflictOption) *SkippedUpsertBulk {
+	_c.conflict = opts
+	return &SkippedUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Skipped.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *SkippedCreateBulk) OnConflictColumns(columns ...string) *SkippedUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &SkippedUpsertBulk{
+		create: _c,
+	}
+}
+
+// SkippedUpsertBulk is the builder for "upsert"-ing
+// a bulk of Skipped nodes.
+type SkippedUpsertBulk struct {
+	create *SkippedCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Skipped.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *SkippedUpsertBulk) UpdateNewValues() *SkippedUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Skipped.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *SkippedUpsertBulk) Ignore() *SkippedUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *SkippedUpsertBulk) DoNothing() *SkippedUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the SkippedCreateBulk.OnConflict
+// documentation for more info.
+func (u *SkippedUpsertBulk) Update(set func(*SkippedUpsert)) *SkippedUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&SkippedUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *SkippedUpsertBulk) SetName(v string) *SkippedUpsertBulk {
+	return u.Update(func(s *SkippedUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *SkippedUpsertBulk) UpdateName() *SkippedUpsertBulk {
+	return u.Update(func(s *SkippedUpsert) {
+		s.UpdateName()
+	})
+}
+
+// Exec executes the query.
+func (u *SkippedUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the SkippedCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for SkippedCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *SkippedUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

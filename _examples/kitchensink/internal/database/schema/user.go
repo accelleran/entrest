@@ -156,6 +156,14 @@ func (User) Annotations() []schema.Annotation {
 		entrest.WithDefaultSort("name"),
 		entrest.WithDefaultOrder(entrest.OrderAsc),
 		entrest.WithAllowClientIDs(true),
+		entrest.WithIncludeOperations(
+			entrest.OperationCreate,
+			entrest.OperationRead,
+			entrest.OperationUpdate,
+			entrest.OperationUpsert,
+			entrest.OperationDelete,
+			entrest.OperationList,
+		),
 	}
 }
 

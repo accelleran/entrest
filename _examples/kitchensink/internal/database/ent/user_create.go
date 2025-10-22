@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/go-github/v66/github"
@@ -24,6 +26,7 @@ type UserCreate struct {
 	config
 	mutation *UserMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -386,6 +389,7 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_node = &User{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = _c.conflict
 	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -533,11 +537,553 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.User.Create().
+//		SetCreatedAt(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.UserUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *UserCreate) OnConflict(opts ...sql.ConflictOption) *UserUpsertOne {
+	_c.conflict = opts
+	return &UserUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.User.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *UserCreate) OnConflictColumns(columns ...string) *UserUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &UserUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// UserUpsertOne is the builder for "upsert"-ing
+	//  one User node.
+	UserUpsertOne struct {
+		create *UserCreate
+	}
+
+	// UserUpsert is the "OnConflict" setter.
+	UserUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *UserUpsert) SetUpdatedAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateUpdatedAt() *UserUpsert {
+	u.SetExcluded(user.FieldUpdatedAt)
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *UserUpsert) SetName(v string) *UserUpsert {
+	u.Set(user.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *UserUpsert) UpdateName() *UserUpsert {
+	u.SetExcluded(user.FieldName)
+	return u
+}
+
+// SetType sets the "type" field.
+func (u *UserUpsert) SetType(v user.Type) *UserUpsert {
+	u.Set(user.FieldType, v)
+	return u
+}
+
+// UpdateType sets the "type" field to the value that was provided on create.
+func (u *UserUpsert) UpdateType() *UserUpsert {
+	u.SetExcluded(user.FieldType)
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *UserUpsert) SetDescription(v string) *UserUpsert {
+	u.Set(user.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *UserUpsert) UpdateDescription() *UserUpsert {
+	u.SetExcluded(user.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *UserUpsert) ClearDescription() *UserUpsert {
+	u.SetNull(user.FieldDescription)
+	return u
+}
+
+// SetEnabled sets the "enabled" field.
+func (u *UserUpsert) SetEnabled(v bool) *UserUpsert {
+	u.Set(user.FieldEnabled, v)
+	return u
+}
+
+// UpdateEnabled sets the "enabled" field to the value that was provided on create.
+func (u *UserUpsert) UpdateEnabled() *UserUpsert {
+	u.SetExcluded(user.FieldEnabled)
+	return u
+}
+
+// SetEmail sets the "email" field.
+func (u *UserUpsert) SetEmail(v string) *UserUpsert {
+	u.Set(user.FieldEmail, v)
+	return u
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *UserUpsert) UpdateEmail() *UserUpsert {
+	u.SetExcluded(user.FieldEmail)
+	return u
+}
+
+// ClearEmail clears the value of the "email" field.
+func (u *UserUpsert) ClearEmail() *UserUpsert {
+	u.SetNull(user.FieldEmail)
+	return u
+}
+
+// SetAvatar sets the "avatar" field.
+func (u *UserUpsert) SetAvatar(v []byte) *UserUpsert {
+	u.Set(user.FieldAvatar, v)
+	return u
+}
+
+// UpdateAvatar sets the "avatar" field to the value that was provided on create.
+func (u *UserUpsert) UpdateAvatar() *UserUpsert {
+	u.SetExcluded(user.FieldAvatar)
+	return u
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (u *UserUpsert) ClearAvatar() *UserUpsert {
+	u.SetNull(user.FieldAvatar)
+	return u
+}
+
+// SetPasswordHashed sets the "password_hashed" field.
+func (u *UserUpsert) SetPasswordHashed(v string) *UserUpsert {
+	u.Set(user.FieldPasswordHashed, v)
+	return u
+}
+
+// UpdatePasswordHashed sets the "password_hashed" field to the value that was provided on create.
+func (u *UserUpsert) UpdatePasswordHashed() *UserUpsert {
+	u.SetExcluded(user.FieldPasswordHashed)
+	return u
+}
+
+// SetGithubData sets the "github_data" field.
+func (u *UserUpsert) SetGithubData(v *github.User) *UserUpsert {
+	u.Set(user.FieldGithubData, v)
+	return u
+}
+
+// UpdateGithubData sets the "github_data" field to the value that was provided on create.
+func (u *UserUpsert) UpdateGithubData() *UserUpsert {
+	u.SetExcluded(user.FieldGithubData)
+	return u
+}
+
+// ClearGithubData clears the value of the "github_data" field.
+func (u *UserUpsert) ClearGithubData() *UserUpsert {
+	u.SetNull(user.FieldGithubData)
+	return u
+}
+
+// SetAnyData sets the "any_data" field.
+func (u *UserUpsert) SetAnyData(v *github.User) *UserUpsert {
+	u.Set(user.FieldAnyData, v)
+	return u
+}
+
+// UpdateAnyData sets the "any_data" field to the value that was provided on create.
+func (u *UserUpsert) UpdateAnyData() *UserUpsert {
+	u.SetExcluded(user.FieldAnyData)
+	return u
+}
+
+// ClearAnyData clears the value of the "any_data" field.
+func (u *UserUpsert) ClearAnyData() *UserUpsert {
+	u.SetNull(user.FieldAnyData)
+	return u
+}
+
+// SetProfileURL sets the "profile_url" field.
+func (u *UserUpsert) SetProfileURL(v *schema.ExampleValuer) *UserUpsert {
+	u.Set(user.FieldProfileURL, v)
+	return u
+}
+
+// UpdateProfileURL sets the "profile_url" field to the value that was provided on create.
+func (u *UserUpsert) UpdateProfileURL() *UserUpsert {
+	u.SetExcluded(user.FieldProfileURL)
+	return u
+}
+
+// ClearProfileURL clears the value of the "profile_url" field.
+func (u *UserUpsert) ClearProfileURL() *UserUpsert {
+	u.SetNull(user.FieldProfileURL)
+	return u
+}
+
+// SetLastAuthenticatedAt sets the "last_authenticated_at" field.
+func (u *UserUpsert) SetLastAuthenticatedAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldLastAuthenticatedAt, v)
+	return u
+}
+
+// UpdateLastAuthenticatedAt sets the "last_authenticated_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateLastAuthenticatedAt() *UserUpsert {
+	u.SetExcluded(user.FieldLastAuthenticatedAt)
+	return u
+}
+
+// ClearLastAuthenticatedAt clears the value of the "last_authenticated_at" field.
+func (u *UserUpsert) ClearLastAuthenticatedAt() *UserUpsert {
+	u.SetNull(user.FieldLastAuthenticatedAt)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.User.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(user.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *UserUpsertOne) UpdateNewValues() *UserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(user.FieldID)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(user.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.User.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *UserUpsertOne) Ignore() *UserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *UserUpsertOne) DoNothing() *UserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the UserCreate.OnConflict
+// documentation for more info.
+func (u *UserUpsertOne) Update(set func(*UserUpsert)) *UserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&UserUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *UserUpsertOne) SetUpdatedAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateUpdatedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *UserUpsertOne) SetName(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateName() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetType sets the "type" field.
+func (u *UserUpsertOne) SetType(v user.Type) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetType(v)
+	})
+}
+
+// UpdateType sets the "type" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateType() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateType()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *UserUpsertOne) SetDescription(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateDescription() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *UserUpsertOne) ClearDescription() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetEnabled sets the "enabled" field.
+func (u *UserUpsertOne) SetEnabled(v bool) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetEnabled(v)
+	})
+}
+
+// UpdateEnabled sets the "enabled" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateEnabled() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateEnabled()
+	})
+}
+
+// SetEmail sets the "email" field.
+func (u *UserUpsertOne) SetEmail(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateEmail() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateEmail()
+	})
+}
+
+// ClearEmail clears the value of the "email" field.
+func (u *UserUpsertOne) ClearEmail() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearEmail()
+	})
+}
+
+// SetAvatar sets the "avatar" field.
+func (u *UserUpsertOne) SetAvatar(v []byte) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatar(v)
+	})
+}
+
+// UpdateAvatar sets the "avatar" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateAvatar() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatar()
+	})
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (u *UserUpsertOne) ClearAvatar() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearAvatar()
+	})
+}
+
+// SetPasswordHashed sets the "password_hashed" field.
+func (u *UserUpsertOne) SetPasswordHashed(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetPasswordHashed(v)
+	})
+}
+
+// UpdatePasswordHashed sets the "password_hashed" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdatePasswordHashed() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdatePasswordHashed()
+	})
+}
+
+// SetGithubData sets the "github_data" field.
+func (u *UserUpsertOne) SetGithubData(v *github.User) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetGithubData(v)
+	})
+}
+
+// UpdateGithubData sets the "github_data" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateGithubData() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateGithubData()
+	})
+}
+
+// ClearGithubData clears the value of the "github_data" field.
+func (u *UserUpsertOne) ClearGithubData() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearGithubData()
+	})
+}
+
+// SetAnyData sets the "any_data" field.
+func (u *UserUpsertOne) SetAnyData(v *github.User) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAnyData(v)
+	})
+}
+
+// UpdateAnyData sets the "any_data" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateAnyData() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAnyData()
+	})
+}
+
+// ClearAnyData clears the value of the "any_data" field.
+func (u *UserUpsertOne) ClearAnyData() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearAnyData()
+	})
+}
+
+// SetProfileURL sets the "profile_url" field.
+func (u *UserUpsertOne) SetProfileURL(v *schema.ExampleValuer) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetProfileURL(v)
+	})
+}
+
+// UpdateProfileURL sets the "profile_url" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateProfileURL() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateProfileURL()
+	})
+}
+
+// ClearProfileURL clears the value of the "profile_url" field.
+func (u *UserUpsertOne) ClearProfileURL() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearProfileURL()
+	})
+}
+
+// SetLastAuthenticatedAt sets the "last_authenticated_at" field.
+func (u *UserUpsertOne) SetLastAuthenticatedAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLastAuthenticatedAt(v)
+	})
+}
+
+// UpdateLastAuthenticatedAt sets the "last_authenticated_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateLastAuthenticatedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLastAuthenticatedAt()
+	})
+}
+
+// ClearLastAuthenticatedAt clears the value of the "last_authenticated_at" field.
+func (u *UserUpsertOne) ClearLastAuthenticatedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearLastAuthenticatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *UserUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for UserCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *UserUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *UserUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: UserUpsertOne.ID is not supported by MySQL driver. Use UserUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *UserUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // UserCreateBulk is the builder for creating many User entities in bulk.
 type UserCreateBulk struct {
 	config
 	err      error
 	builders []*UserCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the User entities in the database.
@@ -567,6 +1113,7 @@ func (_c *UserCreateBulk) Save(ctx context.Context) ([]*User, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -613,6 +1160,340 @@ func (_c *UserCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *UserCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.User.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.UserUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *UserCreateBulk) OnConflict(opts ...sql.ConflictOption) *UserUpsertBulk {
+	_c.conflict = opts
+	return &UserUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.User.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *UserCreateBulk) OnConflictColumns(columns ...string) *UserUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &UserUpsertBulk{
+		create: _c,
+	}
+}
+
+// UserUpsertBulk is the builder for "upsert"-ing
+// a bulk of User nodes.
+type UserUpsertBulk struct {
+	create *UserCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.User.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(user.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *UserUpsertBulk) UpdateNewValues() *UserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(user.FieldID)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(user.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.User.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *UserUpsertBulk) Ignore() *UserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *UserUpsertBulk) DoNothing() *UserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the UserCreateBulk.OnConflict
+// documentation for more info.
+func (u *UserUpsertBulk) Update(set func(*UserUpsert)) *UserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&UserUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *UserUpsertBulk) SetUpdatedAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateUpdatedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *UserUpsertBulk) SetName(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateName() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetType sets the "type" field.
+func (u *UserUpsertBulk) SetType(v user.Type) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetType(v)
+	})
+}
+
+// UpdateType sets the "type" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateType() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateType()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *UserUpsertBulk) SetDescription(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateDescription() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *UserUpsertBulk) ClearDescription() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetEnabled sets the "enabled" field.
+func (u *UserUpsertBulk) SetEnabled(v bool) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetEnabled(v)
+	})
+}
+
+// UpdateEnabled sets the "enabled" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateEnabled() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateEnabled()
+	})
+}
+
+// SetEmail sets the "email" field.
+func (u *UserUpsertBulk) SetEmail(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateEmail() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateEmail()
+	})
+}
+
+// ClearEmail clears the value of the "email" field.
+func (u *UserUpsertBulk) ClearEmail() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearEmail()
+	})
+}
+
+// SetAvatar sets the "avatar" field.
+func (u *UserUpsertBulk) SetAvatar(v []byte) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatar(v)
+	})
+}
+
+// UpdateAvatar sets the "avatar" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateAvatar() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatar()
+	})
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (u *UserUpsertBulk) ClearAvatar() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearAvatar()
+	})
+}
+
+// SetPasswordHashed sets the "password_hashed" field.
+func (u *UserUpsertBulk) SetPasswordHashed(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetPasswordHashed(v)
+	})
+}
+
+// UpdatePasswordHashed sets the "password_hashed" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdatePasswordHashed() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdatePasswordHashed()
+	})
+}
+
+// SetGithubData sets the "github_data" field.
+func (u *UserUpsertBulk) SetGithubData(v *github.User) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetGithubData(v)
+	})
+}
+
+// UpdateGithubData sets the "github_data" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateGithubData() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateGithubData()
+	})
+}
+
+// ClearGithubData clears the value of the "github_data" field.
+func (u *UserUpsertBulk) ClearGithubData() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearGithubData()
+	})
+}
+
+// SetAnyData sets the "any_data" field.
+func (u *UserUpsertBulk) SetAnyData(v *github.User) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAnyData(v)
+	})
+}
+
+// UpdateAnyData sets the "any_data" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateAnyData() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAnyData()
+	})
+}
+
+// ClearAnyData clears the value of the "any_data" field.
+func (u *UserUpsertBulk) ClearAnyData() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearAnyData()
+	})
+}
+
+// SetProfileURL sets the "profile_url" field.
+func (u *UserUpsertBulk) SetProfileURL(v *schema.ExampleValuer) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetProfileURL(v)
+	})
+}
+
+// UpdateProfileURL sets the "profile_url" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateProfileURL() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateProfileURL()
+	})
+}
+
+// ClearProfileURL clears the value of the "profile_url" field.
+func (u *UserUpsertBulk) ClearProfileURL() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearProfileURL()
+	})
+}
+
+// SetLastAuthenticatedAt sets the "last_authenticated_at" field.
+func (u *UserUpsertBulk) SetLastAuthenticatedAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLastAuthenticatedAt(v)
+	})
+}
+
+// UpdateLastAuthenticatedAt sets the "last_authenticated_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateLastAuthenticatedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLastAuthenticatedAt()
+	})
+}
+
+// ClearLastAuthenticatedAt clears the value of the "last_authenticated_at" field.
+func (u *UserUpsertBulk) ClearLastAuthenticatedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearLastAuthenticatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *UserUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the UserCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for UserCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *UserUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

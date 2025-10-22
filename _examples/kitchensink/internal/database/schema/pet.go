@@ -31,6 +31,10 @@ func (Pet) Fields() []ent.Field {
 			Annotations(
 				entrest.WithFilter(entrest.FilterGroupEqual | entrest.FilterGroupArray),
 			),
+		field.String("description").
+			Optional().
+			Nillable().
+			Comment("Optional description of the pet."),
 		field.Int("age").
 			Min(0).Max(50).
 			Annotations(
@@ -97,6 +101,14 @@ func (Pet) Edges() []ent.Edge {
 
 func (Pet) Annotations() []schema.Annotation {
 	return []schema.Annotation{
+		entrest.WithIncludeOperations(
+			entrest.OperationCreate,
+			entrest.OperationRead,
+			entrest.OperationUpdate,
+			entrest.OperationCreateOrReplace,
+			entrest.OperationDelete,
+			entrest.OperationList,
+		),
 		entrest.WithDefaultSort("name"),
 		entrest.WithDefaultOrder(entrest.OrderAsc),
 	}

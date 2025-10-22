@@ -1,0 +1,320 @@
+---
+title: Upsert & Replace Operations
+sidebar:
+  order: 6
+---
+
+import { Code } from '@astrojs/starlight/components';
+
+## Overview
+
+`entrest` provides two `PUT` operations that combine **create** and **update** functionality:
+
+- **`OperationUpsert`**: Creates or **partially updates** an entity (PATCH-like semantics via PUT)
+- **`OperationCreateOrReplace`**: Creates or **fully replaces** an entity (true PUT semantics per RFC 7231)
+
+Both operations work the same way:
+- If an entity with the specified ID **does not exist**, it will be **created**
+- If an entity with the specified ID **exists**, it will be **updated** (behavior differs between operations)
+
+## Choosing Between Upsert and Replace
+
+| Operation | Update Behavior | Unprovided Optional Fields | Use Case |
+|-----------|----------------|----------------------------|-----------|
+| **`OperationUpsert`** | Partial update | **Preserved** (retain existing values) | When you want to update specific fields without affecting others |
+| **`OperationCreateOrReplace`** | Full replacement | **Cleared** (set to `NULL`/default) | When you want to ensure the entity matches exactly what you send |
+
+:::caution[Cannot Use Both]
+You **cannot** enable both `OperationUpsert` and `OperationCreateOrReplace` on the same entity, as they both
+generate `PUT` endpoints at the same path. `entrest` will error at code generation time if you try.
+:::
+
+## Requirements
+
+To use upsert or replace operations in `entrest`, you need to meet the following requirements:
+
+### 1. Enable Ent's Upsert Feature
+
+Ent's [upsert feature](https://entgo.io/docs/feature-flags#upsert) provides SQL `ON CONFLICT` /
+`ON DUPLICATE KEY` functionality. This feature is required for both `OperationUpsert` and
+`OperationCreateOrReplace`, as they use the `OnConflictColumns()` method under the hood to handle ID conflicts.
+
+You can enable this feature in two ways:
+
+#### Via CLI Flag
+
+<Code lang="bash" ins={"sql/upsert"} code={`
+go run -mod=mod entgo.io/ent/cmd/ent generate --feature sql/upsert ./ent/schema
+`} />
+
+#### Via Code in `entc.go`
+
+<Code lang="go" title="internal/database/entc.go" ins={{range: "15-17"}} code={`
+func main() {
+    ex, err := entrest.NewExtension(&entrest.Config{
+        Handler: entrest.HandlerStdlib,
+    })
+    if err != nil {
+        log.Fatalf("creating entrest extension: %v", err)
+    }
+
+    err = entc.Generate(
+        "./database/schema",
+        &gen.Config{
+            Target:  "./database/ent",
+            Schema:  "github.com/example/app/internal/database/schema",
+            Package: "github.com/example/app/internal/database/ent",
+            Features: []gen.Feature{
+                gen.FeatureUpsert,  // Enable upsert feature
+            },
+        },
+        entc.Extensions(ex),
+    )
+    if err != nil {
+        log.Fatalf("failed to run ent codegen: %v", err)
+    }
+}
+`} />
+
+### 2. Entity Must Have an ID Field
+
+Both `OperationUpsert` and `OperationCreateOrReplace` require entities to have an explicit ID field. The ID
+is provided via the URL path (e.g., `PUT /pets/123`) and is used as the conflict target for the operation.
+
+You can define ID fields in several ways in Ent:
+
+#### Integer ID (Auto-incrementing)
+
+<Code lang="go" title="internal/database/schema/pet.go" ins={4} code={`
+// Fields of the Pet schema.
+func (Pet) Fields() []ent.Field {
+    return []ent.Field{
+        field.Int("id"),
+        field.String("name"),
+        // ... other fields
+    }
+}
+`} />
+
+#### UUID ID
+
+<Code lang="go" title="internal/database/schema/pet.go" ins={[8,9]} code={`
+import (
+    "github.com/google/uuid"
+)
+
+// Fields of the Pet schema.
+func (Pet) Fields() []ent.Field {
+    return []ent.Field{
+        field.UUID("id", uuid.UUID{}).
+            Default(uuid.New),
+        field.String("name"),
+        // ... other fields
+    }
+}
+`} />
+
+#### String ID (e.g., Username)
+
+<Code lang="go" title="internal/database/schema/user.go" ins={[4,5,6,7]} code={`
+// Fields of the User schema.
+func (User) Fields() []ent.Field {
+    return []ent.Field{
+        field.String("id").
+            NotEmpty().
+            Immutable().
+            Comment("The username (id) of the user."),
+        field.String("name"),
+        // ... other fields
+    }
+}
+`} />
+
+The ID field will be used as the conflict target, meaning if an entity with the same ID exists,
+it will be updated; otherwise, a new entity will be created.
+
+:::note[ID in Request Body vs URL]
+For both `OperationUpsert` and `OperationCreateOrReplace`, **the ID always comes from the URL path**
+(e.g., `PUT /pets/123`), never from the request body. This is true even if you have
+[`AllowClientIDs`](/entrest/openapi-specs/annotation-reference/#withallowclientids) enabled for your API.
+
+While `AllowClientIDs` allows the ID field to be specified in the request body for **create** operations,
+upsert and replace operations use separate request schemas that exclude the ID field. This prevents
+ambiguity and ensures the URL path is the single source of truth for the entity ID.
+
+**Example:**
+- `POST /pets` with body `{"id": "abc", "name": "Fluffy"}` ✅ (if AllowClientIDs enabled)
+- `PUT /pets/abc` with body `{"id": "abc", "name": "Fluffy"}` ❌ (ID in body is not allowed)
+- `PUT /pets/abc` with body `{"name": "Fluffy"}` ✅ (correct - ID only in URL)
+:::
+
+### 3. Enable Upsert or Replace
+
+By default, neither `OperationUpsert` nor `OperationCreateOrReplace` is enabled. You can enable them in two ways:
+
+#### Globally with Explicit Operations
+
+Explicitly list the operations you want to enable globally:
+
+<Code lang="go" ins={[7]} code={`
+ex, err := entrest.NewExtension(&entrest.Config{
+    Handler: entrest.HandlerStdlib,
+    DefaultOperations: []entrest.Operation{
+        entrest.OperationCreate,
+        entrest.OperationRead,
+        entrest.OperationUpdate,
+        entrest.OperationUpsert,  // Enable upsert (partial updates) by default
+        entrest.OperationDelete,
+        entrest.OperationList,
+    },
+})
+`} />
+
+Or use `OperationCreateOrReplace` instead if you prefer full replacement by default:
+
+<Code lang="go" ins={[7]} code={`
+ex, err := entrest.NewExtension(&entrest.Config{
+    Handler: entrest.HandlerStdlib,
+    DefaultOperations: []entrest.Operation{
+        entrest.OperationCreate,
+        entrest.OperationRead,
+        entrest.OperationUpdate,
+        entrest.OperationCreateOrReplace,  // Enable replace (full replacement) by default
+        entrest.OperationDelete,
+        entrest.OperationList,
+    },
+})
+`} />
+
+#### Per-Entity via Annotations
+
+Enable upsert or replace for specific entities using the `WithIncludeOperations` annotation.
+
+**Example: Entity with Upsert (partial updates)**
+
+<Code lang="go" title="internal/database/schema/user.go" ins={[7]} code={`
+func (User) Annotations() []schema.Annotation {
+    return []schema.Annotation{
+        entrest.WithIncludeOperations(
+            entrest.OperationCreate,
+            entrest.OperationRead,
+            entrest.OperationUpdate,
+            entrest.OperationUpsert,  // Partial updates
+            entrest.OperationDelete,
+            entrest.OperationList,
+        ),
+    }
+}
+`} />
+
+**Example: Entity with Replace (full replacement)**
+
+<Code lang="go" title="internal/database/schema/post.go" ins={[7]} code={`
+func (Post) Annotations() []schema.Annotation {
+    return []schema.Annotation{
+        entrest.WithIncludeOperations(
+            entrest.OperationCreate,
+            entrest.OperationRead,
+            entrest.OperationUpdate,
+            entrest.OperationCreateOrReplace,  // Full replacement
+            entrest.OperationDelete,
+            entrest.OperationList,
+        ),
+    }
+}
+`} />
+
+:::caution[Include All Operations]
+When using `WithIncludeOperations`, you must explicitly list **all** operations you want for that
+entity. The annotation **replaces** the default operations rather than adding to them.
+:::
+
+## HTTP Endpoint Details
+
+Both operations generate a `PUT` endpoint at `/{entities}/{id}`:
+
+- **Method**: `PUT`
+- **Path**: `/{entities}/{id}` (same as read, update, and delete operations)
+- **Request Body**: Similar to the create operation schema, but excludes the ID field (which comes from the URL)
+- **Response**: Returns the created or updated entity
+
+## Example Usage
+
+### OperationUpsert (Partial Updates)
+
+**First request - creates a new user:**
+
+<Code lang="bash" ins={["PUT", "john_doe"]} code={`
+curl --request PUT \\
+  --url 'http://localhost:8080/users/john_doe' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "description": "Software Engineer"
+  }'
+`} />
+
+**Second request - updates only specified fields:**
+
+<Code lang="bash" ins={["PUT", "john_doe"]} code={`
+curl --request PUT \\
+  --url 'http://localhost:8080/users/john_doe' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "name": "John Smith",
+    "email": "john.smith@example.com"
+  }'
+`} />
+
+With `OperationUpsert`, the `description` field is **preserved** because it wasn't included in the
+second request.
+
+### OperationCreateOrReplace (Full Replacement)
+
+**First request - creates a new post:**
+
+<Code lang="bash" ins={["PUT", "12345"]} code={`
+curl --request PUT \\
+  --url 'http://localhost:8080/posts/12345' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "title": "My First Post",
+    "slug": "my-first-post",
+    "body": "This is the content."
+  }'
+`} />
+
+**Second request - replaces the entire resource:**
+
+<Code lang="bash" ins={["PUT", "12345"]} code={`
+curl --request PUT \\
+  --url 'http://localhost:8080/posts/12345' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "title": "Updated Post",
+    "body": "This is the updated content."
+  }'
+`} />
+
+With `OperationCreateOrReplace`, the `slug` field is **cleared** (set to `NULL`) because it wasn't included
+in the second request.
+
+## Behavior Details
+
+Both operations share these characteristics:
+
+1. **ID from URL**: The entity ID always comes from the URL path parameter, not the request body.
+
+2. **Conflict Detection**: Both operations use the entity's ID field for conflict detection.
+   If an entity with that ID exists, it will be updated; otherwise, it will be created.
+
+3. **Eager Loading**: After the operation completes, the entity is fetched with all
+   configured eager-loaded edges, just like create and update operations.
+
+## See Also
+
+- [Annotation Reference](/entrest/openapi-specs/annotation-reference/) - For more details on
+  `WithIncludeOperations` and other annotations
+- [Configuration](/entrest/openapi-specs/configuration/) - For global configuration options
+

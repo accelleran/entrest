@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -527,6 +528,126 @@ func TestHandler_Delete(t *testing.T) {
 	resp = enttest.Request[string](ctx, s, http.MethodDelete, "/pets/"+strconv.Itoa(pet1.ID), nil)
 	require.NotNil(t, resp.Error)
 	assert.Equal(t, http.StatusNotFound, resp.Data.Code)
+}
+
+func TestHandler_Upsert(t *testing.T) {
+	ctx, db, s := newRestServer(t, nil)
+	t.Cleanup(func() { db.Close() })
+
+	userID := uuid.New()
+
+	// First upsert - create a new user with optional fields
+	data := map[string]any{
+		"name":            "John Smith",
+		"email":           "john.smith@example.com",
+		"description":     "Original description",
+		"enabled":         true,
+		"type":            user.TypeUser,
+		"password_hashed": gofakeit.Password(true, true, true, true, true, 15),
+	}
+
+	resp := enttest.Request[ent.User](ctx, s, http.MethodPut, "/users/"+userID.String(), data).Must(t)
+
+	assert.Equal(t, http.StatusOK, resp.Data.Code)
+	assert.Equal(t, userID, resp.Value.ID)
+	assert.Equal(t, data["name"], resp.Value.Name)
+	require.NotNil(t, resp.Value.Email)
+	if resp.Value.Email != nil {
+		assert.Equal(t, data["email"], *resp.Value.Email)
+	}
+	require.NotNil(t, resp.Value.Description)
+	if resp.Value.Description != nil {
+		assert.Equal(t, data["description"], *resp.Value.Description)
+	}
+
+	// Second upsert - partial update without optional fields
+	// OperationUpsert (partial update mode) should:
+	//   - Update provided fields (name, enabled)
+	//   - Preserve unprovided optional fields (email, description)
+	partialUpdateData := map[string]any{
+		"name":            "Jane Doe",
+		"enabled":         false,
+		"type":            user.TypeSystem,
+		"password_hashed": gofakeit.Password(true, true, true, true, true, 15),
+	}
+
+	resp = enttest.Request[ent.User](ctx, s, http.MethodPut, "/users/"+userID.String(), partialUpdateData).Must(t)
+
+	assert.Equal(t, http.StatusOK, resp.Data.Code)
+	assert.Equal(t, userID, resp.Value.ID)
+	assert.Equal(t, partialUpdateData["name"], resp.Value.Name)
+	assert.Equal(t, partialUpdateData["enabled"], resp.Value.Enabled)
+
+	// These optional fields should be PRESERVED (not cleared) because OperationUpsert uses partial updates
+	assert.NotNil(t, resp.Value.Email, "Email should be preserved in partial update mode")
+	if resp.Value.Email != nil {
+		assert.Equal(t, data["email"], *resp.Value.Email, "Email should retain original value")
+	}
+	assert.NotNil(t, resp.Value.Description, "Description should be preserved in partial update mode")
+	if resp.Value.Description != nil {
+		assert.Equal(t, data["description"], *resp.Value.Description, "Description should retain original value")
+	}
+
+	// Verify there's only one user in the database with this ID
+	count := db.User.Query().Where(user.ID(userID)).CountX(ctx)
+	assert.Equal(t, 1, count)
+}
+
+func TestHandler_Replace(t *testing.T) {
+	ctx, db, s := newRestServer(t, nil)
+	t.Cleanup(func() { db.Close() })
+
+	petID := 98765
+
+	// First Replace: Create a new pet with optional description
+	// Replace should work for creating new entities (upsert functionality)
+	initialData := map[string]any{
+		"name":        "Fluffy",
+		"age":         3,
+		"type":        pet.TypeCat,
+		"description": "A fluffy cat",
+	}
+
+	resp := enttest.Request[ent.Pet](ctx, s, http.MethodPut, "/pets/"+fmt.Sprintf("%d", petID), initialData).Must(t)
+
+	assert.Equal(t, http.StatusOK, resp.Data.Code)
+	assert.Equal(t, petID, resp.Value.ID)
+	assert.Equal(t, initialData["name"], resp.Value.Name)
+	assert.Equal(t, initialData["age"], resp.Value.Age)
+	assert.Equal(t, initialData["type"], resp.Value.Type)
+	require.NotNil(t, resp.Value.Description)
+	assert.Equal(t, initialData["description"], *resp.Value.Description)
+
+	// Second Replace: Update the pet without providing description
+	// OperationCreateOrReplace (full replacement mode) should CLEAR unprovided optional fields
+	replacementData := map[string]any{
+		"name": "Fluffy Updated",
+		"age":  4,
+		"type": pet.TypeDog,
+		// description intentionally omitted - should be cleared
+	}
+
+	resp = enttest.Request[ent.Pet](ctx, s, http.MethodPut, "/pets/"+fmt.Sprintf("%d", petID), replacementData).Must(t)
+
+	assert.Equal(t, http.StatusOK, resp.Data.Code)
+	assert.Equal(t, petID, resp.Value.ID)
+	assert.Equal(t, replacementData["name"], resp.Value.Name)
+	assert.Equal(t, replacementData["age"], resp.Value.Age)
+	assert.Equal(t, replacementData["type"], resp.Value.Type)
+
+	// The optional description field should be CLEARED because OperationCreateOrReplace performs full replacement
+	assert.Nil(t, resp.Value.Description, "Description should be cleared in full replacement mode when not provided")
+
+	// Verify in database
+	dbPet := db.Pet.Query().Where(pet.ID(petID)).OnlyX(ctx)
+	assert.Equal(t, "Fluffy Updated", dbPet.Name)
+	assert.Equal(t, 4, dbPet.Age)
+	assert.Equal(t, pet.TypeDog, dbPet.Type)
+	assert.Nil(t, dbPet.Description, "Description should be nil in database after full replacement")
+
+	// Verify there's only one pet in the database with this ID
+	count := db.Pet.Query().Where(pet.ID(petID)).CountX(ctx)
+	assert.Equal(t, 1, count)
 }
 
 func TestHandler_SortRandom(t *testing.T) {

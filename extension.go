@@ -138,6 +138,15 @@ func (e *Extension) Generate(g *gen.Graph) (*ogen.Spec, error) {
 
 		ops = ta.GetOperations(e.config)
 
+		// Validate that both OperationUpsert and OperationCreateOrReplace are not enabled on the same entity
+		if slices.Contains(ops, OperationUpsert) && slices.Contains(ops, OperationCreateOrReplace) {
+			return nil, fmt.Errorf(
+				"entity %s: cannot use both OperationUpsert and OperationCreateOrReplace on the same entity (both generate PUT endpoints). "+
+					"Use OperationUpsert for partial updates or OperationCreateOrReplace for full replacement",
+				t.Name,
+			)
+		}
+
 		for _, op := range ops {
 			if t.ID == nil && (op != OperationList && op != OperationCreate) {
 				continue
