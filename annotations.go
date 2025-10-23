@@ -91,23 +91,24 @@ type Annotation struct {
 
 	// All others.
 
-	Pagination      *bool       `json:",omitempty" ent:"schema,edge"`
-	MinItemsPerPage int         `json:",omitempty" ent:"schema,edge"`
-	MaxItemsPerPage int         `json:",omitempty" ent:"schema,edge"`
-	ItemsPerPage    int         `json:",omitempty" ent:"schema,edge"`
-	EagerLoad       *bool       `json:",omitempty" ent:"edge"`
-	EagerLoadLimit  *int        `json:",omitempty" ent:"edge"`
-	EdgeEndpoint    *bool       `json:",omitempty" ent:"edge"`
-	EdgeUpdateBulk  bool        `json:",omitempty" ent:"edge"`
-	Filter          Predicate   `json:",omitempty" ent:"schema,edge,field"`
-	FilterGroup     string      `json:",omitempty" ent:"edge,field"`
-	DisableHandler  bool        `json:",omitempty" ent:"schema,edge"`
-	Sortable        bool        `json:",omitempty" ent:"field"`
-	DefaultSort     *string     `json:",omitempty" ent:"schema"`
-	DefaultOrder    *SortOrder  `json:",omitempty" ent:"schema"`
-	Skip            bool        `json:",omitempty" ent:"schema,edge,field"`
-	AllowClientIDs  *bool       `json:",omitempty" ent:"schema"`
-	Operations      []Operation `json:",omitempty" ent:"schema,edge"`
+	Pagination         *bool       `json:",omitempty" ent:"schema,edge"`
+	MinItemsPerPage    int         `json:",omitempty" ent:"schema,edge"`
+	MaxItemsPerPage    int         `json:",omitempty" ent:"schema,edge"`
+	ItemsPerPage       int         `json:",omitempty" ent:"schema,edge"`
+	EagerLoad          *bool       `json:",omitempty" ent:"edge"`
+	EagerLoadLimit     *int        `json:",omitempty" ent:"edge"`
+	EdgeEndpoint       *bool       `json:",omitempty" ent:"edge"`
+	EdgeUpdateBulk     bool        `json:",omitempty" ent:"edge"`
+	Filter             Predicate   `json:",omitempty" ent:"schema,edge,field"`
+	FilterGroup        string      `json:",omitempty" ent:"edge,field"`
+	DisableHandler     bool        `json:",omitempty" ent:"schema,edge"`
+	Sortable           bool        `json:",omitempty" ent:"field"`
+	DefaultSort        *string     `json:",omitempty" ent:"schema"`
+	DefaultOrder       *SortOrder  `json:",omitempty" ent:"schema"`
+	Skip               bool        `json:",omitempty" ent:"schema,edge,field"`
+	AllowClientIDs     *bool       `json:",omitempty" ent:"schema"`
+	Operations         []Operation `json:",omitempty" ent:"schema,edge"`
+	ExcludedOperations []Operation `json:",omitempty" ent:"schema,edge"`
 }
 
 // getSupportedType uses reflection to check if the annotation is supported on the
@@ -244,6 +245,13 @@ func (a Annotation) Merge(o schema.Annotation) schema.Annotation { // nolint:goc
 			}
 		}
 	}
+	if len(am.ExcludedOperations) > 0 {
+		for _, op := range am.ExcludedOperations {
+			if !slices.Contains(a.ExcludedOperations, op) {
+				a.ExcludedOperations = append(a.ExcludedOperations, op)
+			}
+		}
+	}
 
 	return a
 }
@@ -348,10 +356,26 @@ func (a *Annotation) HasOperation(config *Config, op Operation) bool {
 // GetOperations returns the operations annotation (or defaults from
 // [Config.DefaultOperations]).
 func (a *Annotation) GetOperations(config *Config) []Operation {
-	if a.Operations == nil {
-		return config.DefaultOperations
+	// If explicit operations are set via WithIncludeOperations, use those
+	if a.Operations != nil {
+		return a.Operations
 	}
-	return a.Operations
+
+	// If no operations set, start with defaults
+	ops := config.DefaultOperations
+
+	// If exclusions are set via WithExcludeOperations, filter them out
+	if len(a.ExcludedOperations) > 0 {
+		var filtered []Operation
+		for _, op := range ops {
+			if !slices.Contains(a.ExcludedOperations, op) {
+				filtered = append(filtered, op)
+			}
+		}
+		return filtered
+	}
+
+	return ops
 }
 
 // GetOperationSummary returns the summary for the provided operation or an empty
@@ -621,20 +645,13 @@ func WithSchema(v *ogen.Schema) Annotation {
 	return Annotation{Schema: v}
 }
 
-// WithIncludeOperations includes the specified operations in the REST API for the
-// schema. If empty, all operations are generated (unless globally disabled).
+// WithIncludeOperations explicitly sets which operations are enabled in the REST API for the
+// schema, overriding Config.DefaultOperations entirely.
 func WithIncludeOperations(v ...Operation) Annotation {
 	return Annotation{Operations: v}
 }
 
-// WithExcludeOperations excludes the specified operations in the REST API for the
-// schema. If empty, all operations are generated (unless globally disabled).
+// WithExcludeOperations excludes the specified operations from Config.DefaultOperations.
 func WithExcludeOperations(v ...Operation) Annotation {
-	var ops []Operation
-	for _, o := range AllOperations {
-		if !slices.Contains(v, o) {
-			ops = append(ops, o)
-		}
-	}
-	return Annotation{Operations: ops}
+	return Annotation{ExcludedOperations: v}
 }
