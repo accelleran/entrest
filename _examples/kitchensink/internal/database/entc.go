@@ -37,6 +37,7 @@ func main() {
 			Package: "github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent",
 			Features: []gen.Feature{
 				gen.FeaturePrivacy,
+				gen.FeatureUpsert,
 			},
 		},
 		entc.Extensions(ex),

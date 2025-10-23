@@ -100,8 +100,10 @@ func (c *UpdateFriendshipParams) Exec(ctx context.Context, builder *ent.Friendsh
 type UpdatePetParams struct {
 	Name      Option[string]   `json:"name"`
 	Nicknames Option[[]string] `json:"nicknames,omitempty"`
-	Age       Option[int]      `json:"age"`
-	Type      Option[pet.Type] `json:"type"`
+	// Optional description of the pet.
+	Description Option[*string]  `json:"description,omitempty"`
+	Age         Option[int]      `json:"age"`
+	Type        Option[pet.Type] `json:"type"`
 	// Categories that the pet belongs to.
 	AddCategories Option[[]int] `json:"add_categories,omitempty"`
 	// Categories that the pet belongs to.
@@ -126,6 +128,13 @@ func (u *UpdatePetParams) ApplyInputs(builder *ent.PetUpdateOne) *ent.PetUpdateO
 	}
 	if v, ok := u.Nicknames.Get(); ok {
 		builder.SetNicknames(v)
+	}
+	if v, ok := u.Description.Get(); ok {
+		if v != nil {
+			builder.SetDescription(*v)
+		} else {
+			builder.ClearDescription()
+		}
 	}
 	if v, ok := u.Age.Get(); ok {
 		builder.SetAge(v)
@@ -284,11 +293,13 @@ type UpdateUserParams struct {
 	// Friends of the user.
 	AddFriends Option[[]uuid.UUID] `json:"add_friends,omitempty"`
 	// Friends of the user.
-	RemoveFriends     Option[[]uuid.UUID] `json:"remove_friends,omitempty"`
-	AddPosts          Option[[]int]       `json:"add_posts,omitempty"`
-	RemovePosts       Option[[]int]       `json:"remove_posts,omitempty"`
-	AddFriendships    Option[[]int]       `json:"add_friendships,omitempty"`
-	RemoveFriendships Option[[]int]       `json:"remove_friendships,omitempty"`
+	RemoveFriends Option[[]uuid.UUID] `json:"remove_friends,omitempty"`
+	// Posts authored by the user.
+	AddPosts Option[[]int] `json:"add_posts,omitempty"`
+	// Posts authored by the user.
+	RemovePosts       Option[[]int] `json:"remove_posts,omitempty"`
+	AddFriendships    Option[[]int] `json:"add_friendships,omitempty"`
+	RemoveFriendships Option[[]int] `json:"remove_friendships,omitempty"`
 }
 
 func (u *UpdateUserParams) ApplyInputs(builder *ent.UserUpdateOne) *ent.UserUpdateOne {

@@ -54,7 +54,7 @@ func init() {
 	petFields := schema.Pet{}.Fields()
 	_ = petFields
 	// petDescAge is the schema descriptor for age field.
-	petDescAge := petFields[3].Descriptor()
+	petDescAge := petFields[4].Descriptor()
 	// pet.AgeValidator is a validator for the "age" field. It is called by the builders before save.
 	pet.AgeValidator = func() func(int) error {
 		validators := petDescAge.Validators

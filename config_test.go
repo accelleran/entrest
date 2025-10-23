@@ -384,8 +384,8 @@ func TestConfig_DefaultOperations(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "all-operations",
-			ops:  AllOperations,
+			name: "default-operations",
+			ops:  DefaultOperations,
 		},
 		{
 			name:    "no-operations",
@@ -403,6 +403,14 @@ func TestConfig_DefaultOperations(t *testing.T) {
 		{
 			name: "update-1",
 			ops:  []Operation{OperationUpdate},
+		},
+		{
+			name: "upsert-1",
+			ops:  []Operation{OperationUpsert},
+		},
+		{
+			name: "create-or-replace-1",
+			ops:  []Operation{OperationCreateOrReplace},
 		},
 		{
 			name: "delete-1",
@@ -448,6 +456,12 @@ func TestConfig_DefaultOperations(t *testing.T) {
 				assert.NotNil(t, r.json(`$.paths./pets/{petID}.patch`))
 			} else {
 				assert.Nil(t, r.json(`$.paths./pets/{petID}.patch`))
+			}
+
+			if slices.Contains(tt.ops, OperationUpsert) || slices.Contains(tt.ops, OperationCreateOrReplace) {
+				assert.NotNil(t, r.json(`$.paths./pets/{petID}.put`))
+			} else {
+				assert.Nil(t, r.json(`$.paths./pets/{petID}.put`))
 			}
 
 			if slices.Contains(tt.ops, OperationDelete) {
@@ -637,6 +651,33 @@ func TestConfig_AllowClientIDs(t *testing.T) {
 		assert.Equal(t, "string", r.json(`$.components.schemas.User.properties.id.type`))
 		assert.Equal(t, "string", r.json(`$.components.schemas.UserCreate.properties.id.type`))
 		assert.Equal(t, "string", r.json(`$.components.parameters.UserID.schema.type`))
+	})
+
+	t.Run("enabled-with-upsert", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			AllowClientIDs:    true,
+			DefaultOperations: []Operation{OperationCreate, OperationUpsert},
+		})
+
+		// ID should be in the Create schema when AllowClientIDs is enabled
+		assert.Equal(t, "string", r.json(`$.components.schemas.AllTypeCreate.properties.id.type`))
+		assert.Equal(t, "uuid", r.json(`$.components.schemas.AllTypeCreate.properties.id.format`))
+
+		// ID should NOT be in the Upsert schema even when AllowClientIDs is enabled
+		// because the ID always comes from the URL path parameter for upsert operations
+		assert.Nil(t, r.json(`$.components.schemas.AllTypeUpsert.properties.id`), "Upsert schema should not have ID field")
+		assert.NotNil(t, r.json(`$.components.schemas.AllTypeUpsert.properties`), "Upsert schema should exist and have other properties")
+
+		// The upsert operation should reference the Upsert schema (not Create)
+		assert.NotNil(t, r.json(`$.paths./all-types/{alltypeID}.put`), "PUT endpoint should exist for upsert")
+		assert.Equal(t, "#/components/schemas/AllTypeUpsert", r.json(`$.paths./all-types/{alltypeID}.put.requestBody.content.application/json.schema.$ref`))
+
+		// Verify the same for User (string ID)
+		assert.Equal(t, "string", r.json(`$.components.schemas.UserCreate.properties.id.type`))
+		assert.Nil(t, r.json(`$.components.schemas.UserUpsert.properties.id`))
+		assert.Equal(t, "#/components/schemas/UserUpsert", r.json(`$.paths./users/{userID}.put.requestBody.content.application/json.schema.$ref`))
 	})
 
 	t.Run("disabled", func(t *testing.T) {

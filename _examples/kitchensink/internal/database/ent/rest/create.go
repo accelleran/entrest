@@ -112,8 +112,10 @@ func (c *CreateFriendshipParams) Exec(ctx context.Context, builder *ent.Friendsh
 type CreatePetParams struct {
 	Name      string   `json:"name"`
 	Nicknames []string `json:"nicknames,omitempty"`
-	Age       int      `json:"age"`
-	Type      pet.Type `json:"type"`
+	// Optional description of the pet.
+	Description *string  `json:"description,omitempty"`
+	Age         int      `json:"age"`
+	Type        pet.Type `json:"type"`
 	// Categories that the pet belongs to.
 	Categories []int `json:"categories,omitempty"`
 	// The user that owns the pet.
@@ -128,6 +130,9 @@ func (c *CreatePetParams) ApplyInputs(builder *ent.PetCreate) *ent.PetCreate {
 	builder.SetName(c.Name)
 	if c.Nicknames != nil {
 		builder.SetNicknames(c.Nicknames)
+	}
+	if c.Description != nil {
+		builder.SetDescription(*c.Description)
 	}
 	builder.SetAge(c.Age)
 	builder.SetType(c.Type)
@@ -231,9 +236,10 @@ type CreateUserParams struct {
 	// Pets that the user is following.
 	FollowedPets []int `json:"followed_pets,omitempty"`
 	// Friends of the user.
-	Friends     []uuid.UUID `json:"friends,omitempty"`
-	Posts       []int       `json:"posts,omitempty"`
-	Friendships []int       `json:"friendships,omitempty"`
+	Friends []uuid.UUID `json:"friends,omitempty"`
+	// Posts authored by the user.
+	Posts       []int `json:"posts,omitempty"`
+	Friendships []int `json:"friendships,omitempty"`
 }
 
 func (c *CreateUserParams) ApplyInputs(builder *ent.UserCreate) *ent.UserCreate {

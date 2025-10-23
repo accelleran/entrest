@@ -1,0 +1,126 @@
+{{- /*
+  Copyright (c) Accelleran nv. All rights reserved. Use of
+  this source code is governed by the MIT license that can be found in
+  the LICENSE file.
+*/ -}}
+{{- define "rest/replace" }}
+{{- with extend $ "Package" "rest" }}{{ template "header" . }}{{ end }}
+
+import (
+    {{- template "helper/rest/standard-imports" . }}
+    {{- template "helper/rest/schema-imports" . }}
+)
+
+{{- range $t := $.Nodes }}
+    {{- $hasReplace := (($t|getAnnotation).HasOperation $.Annotations.RestConfig "replace") }}
+    {{- if or
+        (($t|getAnnotation).GetSkip $.Annotations.RestConfig)
+        (not $t.ID)
+        (not $hasReplace)
+    }}
+        {{- continue }}
+    {{ end }}
+
+    // Replace{{ $t.Name|zsingular }}Params defines parameters for replacing a {{ $t.Name|zsingular }} via a PUT request.
+    // Only includes fields/edges not excluded from replace operations.
+    // Replace performs full resource replacement: unprovided optional fields are cleared (set to nil).
+    type Replace{{ $t.Name|zsingular }}Params struct {
+    {{- template "helper/upsert/struct-fields" dict "Type" $t "Operation" "replace" "Config" $.Annotations.RestConfig }}
+    }
+
+    func (r *Replace{{ $t.Name|zsingular }}Params) ApplyInputs(builder *ent.{{ $t.Name }}Create) *ent.{{ $t.Name }}Create {
+    {{- template "helper/upsert/apply-inputs" dict "Type" $t "Operation" "replace" "Receiver" "r" "Config" $.Annotations.RestConfig }}
+    }
+
+    // Exec wraps all logic (mapping all provided values to the builder), replaces the entity
+    // (creating it if it doesn't exist or fully replacing it if it does), and does another query
+    // (using provided query as base) to get the entity, with all eager loaded edges.
+    func (r *Replace{{ $t.Name|zsingular }}Params) Exec(ctx context.Context, id {{ $t.ID.Type }}, builder *ent.{{ $t.Name }}Create, query *ent.{{ $t.Name }}Query) (*ent.{{ $t.Name }}, error) {
+        // Set the ID for the replace operation
+        builder.SetID(id)
+
+        // Apply all inputs from the params
+        builder = r.ApplyInputs(builder)
+
+        // Perform replace with OnConflict - full replacement mode (true PUT semantics)
+        // Unprovided optional/nullable fields are explicitly cleared
+        err := builder.OnConflictColumns({{ $t.Package }}.{{ $t.ID.Constant }}).Update(func(u *ent.{{ $t.Name }}Upsert) {
+            {{- range $f := $t.Fields }}
+                {{- if or (($f|getAnnotation).GetSkip $.Annotations.RestConfig) $f.Annotations.Rest.ReadOnly }}{{ continue }}{{ end }}
+                {{- if $f.Optional }}
+            if r.{{ $f.StructField }} != nil {
+                    {{- if or (hasPrefix $f.Type.Ident "[]") (hasPrefix $f.Type.Ident "*") $f.IsBytes }}
+                u.Set{{ $f.StructField }}(r.{{ $f.StructField }})
+                    {{- else }}
+                u.Set{{ $f.StructField }}(*r.{{ $f.StructField }})
+                    {{- end }}
+            } else {
+                u.Clear{{ $f.StructField }}()
+            }
+                {{- else if $f.Nillable }}
+            if r.{{ $f.StructField }} != nil {
+                u.Set{{ $f.StructField }}(*r.{{ $f.StructField }})
+            }
+            // Note: Nillable field without Optional cannot be cleared (Ent doesn't generate Clear method)
+                {{- else if $f.Default }}
+            if r.{{ $f.StructField }} != nil {
+                    {{- if or (hasPrefix $f.Type.Ident "[]") (hasPrefix $f.Type.Ident "*") $f.IsBytes }}
+                u.Set{{ $f.StructField }}(r.{{ $f.StructField }})
+                    {{- else }}
+                u.Set{{ $f.StructField }}(*r.{{ $f.StructField }})
+                    {{- end }}
+            }
+                {{- else }}
+                    {{- if or (hasPrefix $f.Type.Ident "[]") (hasPrefix $f.Type.Ident "*") $f.IsBytes }}
+            u.Set{{ $f.StructField }}(r.{{ $f.StructField }})
+                    {{- else }}
+            u.Set{{ $f.StructField }}(r.{{ $f.StructField }})
+                    {{- end }}
+                {{- end }}
+            {{- end }}
+            {{- range $e := $t.Edges }}
+                {{- if or
+                    (($e|getAnnotation).GetSkip $.Annotations.RestConfig)
+                    $e.Annotations.Rest.ReadOnly
+                    (not (($e|getAnnotation).HasOperation $.Annotations.RestConfig "replace"))
+                    (not $e.Type.ID)
+                }}
+                    {{- continue }}
+                {{ end -}}
+                {{- $f := $e.Field }}
+                {{- if $f }}
+                    {{- if or (($f|getAnnotation).GetSkip $.Annotations.RestConfig) $f.Annotations.Rest.ReadOnly }}{{ continue }}{{ end }}
+                    {{- if or $f.Nillable $f.Optional }}
+            if r.{{ $f.StructField }} != nil {
+                        {{- if $f.Nillable }}
+                u.Set{{ $f.StructField }}(r.{{ $f.StructField }})
+                        {{- else }}
+                u.Set{{ $f.StructField }}(*r.{{ $f.StructField }})
+                        {{- end }}
+            } else {
+                u.Clear{{ $f.StructField }}()
+            }
+                    {{- else }}
+                        {{- if $f.Nillable }}
+            u.Set{{ $f.StructField }}(r.{{ $f.StructField }})
+                        {{- else }}
+            u.Set{{ $f.StructField }}(*r.{{ $f.StructField }})
+                        {{- end }}
+                    {{- end }}
+                {{- else }}
+                    {{- /* edge.From without explicit backing field - skip as Ent doesn't generate setter methods for these in PostUpsert */ -}}
+            // Edge {{ $e.StructField }} is edge.From without backing field, skipped (Ent doesn't generate setters for these)
+                {{- end }}
+            {{- end }}
+        }).Exec(ctx)
+        if err != nil {
+            return nil, err
+        }
+
+        // Fetch the entity with eager-loaded edges
+        return EagerLoad{{ $t.Name|zsingular }}(query.Where({{ $t.Package }}.ID(id))).Only(ctx)
+    }
+{{- end }}{{/* end range */}}
+{{- end }}{{/* end template */}}
+
+

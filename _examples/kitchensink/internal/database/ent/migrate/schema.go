@@ -91,6 +91,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "nicknames", Type: field.TypeJSON, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "age", Type: field.TypeInt},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"DOG", "CAT", "BIRD", "FISH", "AMPHIBIAN", "REPTILE", "OTHER"}},
 		{Name: "user_pets", Type: field.TypeUUID, Nullable: true},
@@ -103,7 +104,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "pets_users_pets",
-				Columns:    []*schema.Column{PetsColumns[5]},
+				Columns:    []*schema.Column{PetsColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

@@ -152,7 +152,7 @@ func GetSchemaType(t *gen.Type, op Operation, edge *gen.Edge) map[string]*ogen.S
 	entityName := Singularize(t.Name)
 
 	switch op {
-	case OperationCreate, OperationUpdate:
+	case OperationCreate, OperationUpdate, OperationUpsert, OperationCreateOrReplace:
 		schema := &ogen.Schema{
 			Description: cmp.Or(
 				ta.GetOperationDescription(op),
@@ -166,6 +166,9 @@ func GetSchemaType(t *gen.Type, op Operation, edge *gen.Edge) map[string]*ogen.S
 
 		var fieldSchema *ogen.Schema
 
+		// Only allow ID in request body for Create operations when AllowClientIDs is enabled.
+		// For Upsert and Replace operations, the ID always comes from the URL path parameter,
+		// so we never include it in the request body schema.
 		if op == OperationCreate && ta.GetAllowClientIDs(cfg) && t.ID != nil {
 			fieldSchema, err = GetSchemaField(t.ID)
 			if err != nil {
@@ -190,7 +193,7 @@ func GetSchemaType(t *gen.Type, op Operation, edge *gen.Edge) map[string]*ogen.S
 				continue
 			}
 
-			if op == OperationCreate || !f.Immutable {
+			if op == OperationCreate || op == OperationUpsert || op == OperationCreateOrReplace || !f.Immutable {
 				fieldSchema, err = GetSchemaField(f)
 				if err != nil {
 					panic(fmt.Sprintf("failed to generate schema for field %s: %v", f.StructField(), err))
@@ -207,7 +210,7 @@ func GetSchemaType(t *gen.Type, op Operation, edge *gen.Edge) map[string]*ogen.S
 					schema.Properties = append(schema.Properties, *updated.ToProperty(f.Name))
 				}
 
-				if op == OperationCreate && !f.Optional && !f.Default {
+				if (op == OperationCreate || op == OperationUpsert || op == OperationCreateOrReplace) && !f.Optional && !f.Default {
 					schema.Required = append(schema.Required, f.Name)
 				}
 			}
@@ -251,7 +254,7 @@ func GetSchemaType(t *gen.Type, op Operation, edge *gen.Edge) map[string]*ogen.S
 					continue
 				}
 
-				if (op == OperationCreate && !e.Optional && !e.Field().Default) || (op == OperationUpdate && !e.Field().UpdateDefault) {
+				if ((op == OperationCreate || op == OperationUpsert || op == OperationCreateOrReplace) && !e.Optional && !e.Field().Default) || (op == OperationUpdate && !e.Field().UpdateDefault) {
 					schema.Required = append(schema.Required, e.Name)
 				}
 			}
@@ -271,7 +274,7 @@ func GetSchemaType(t *gen.Type, op Operation, edge *gen.Edge) map[string]*ogen.S
 				schema.Properties = append(schema.Properties, *fieldSchema.ToProperty(e.Name))
 			}
 
-			if !slices.Contains(schema.Required, e.Name) && op == OperationCreate && !e.Optional {
+			if !slices.Contains(schema.Required, e.Name) && (op == OperationCreate || op == OperationUpsert || op == OperationCreateOrReplace) && !e.Optional {
 				schema.Required = append(schema.Required, e.Name)
 			}
 		}
@@ -281,6 +284,17 @@ func GetSchemaType(t *gen.Type, op Operation, edge *gen.Edge) map[string]*ogen.S
 			schemas[entityName+"Create"] = schema
 		case OperationUpdate:
 			schemas[entityName+"Update"] = schema
+		case OperationUpsert:
+			// Upsert has its own schema to ensure the ID field is never included in
+			// the request body (it always comes from the URL path parameter).
+			// If AllowClientIDs is disabled, the Upsert schema will be identical to Create,
+			// but if enabled, Create will have the ID field and Upsert won't.
+			schemas[entityName+"Upsert"] = schema
+		case OperationCreateOrReplace:
+			// Replace has its own schema, identical to Upsert in terms of which fields are included,
+			// but semantically represents full resource replacement instead of partial updates.
+			// The ID field is never included in the request body (it always comes from the URL path parameter).
+			schemas[entityName+"Replace"] = schema
 		default:
 			panic("unreachable")
 		}

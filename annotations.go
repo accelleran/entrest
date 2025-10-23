@@ -631,7 +631,7 @@ func WithIncludeOperations(v ...Operation) Annotation {
 // schema. If empty, all operations are generated (unless globally disabled).
 func WithExcludeOperations(v ...Operation) Annotation {
 	var ops []Operation
-	for _, o := range AllOperations {
+	for _, o := range DefaultOperations {
 		if !slices.Contains(v, o) {
 			ops = append(ops, o)
 		}
