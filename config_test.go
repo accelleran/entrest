@@ -458,11 +458,11 @@ func TestConfig_DefaultOperations(t *testing.T) {
 				assert.Nil(t, r.json(`$.paths./pets/{petID}.patch`))
 			}
 
-		if slices.Contains(tt.ops, OperationUpsert) || slices.Contains(tt.ops, OperationCreateOrReplace) {
-			assert.NotNil(t, r.json(`$.paths./pets/{petID}.put`))
-		} else {
-			assert.Nil(t, r.json(`$.paths./pets/{petID}.put`))
-		}
+			if slices.Contains(tt.ops, OperationUpsert) || slices.Contains(tt.ops, OperationCreateOrReplace) {
+				assert.NotNil(t, r.json(`$.paths./pets/{petID}.put`))
+			} else {
+				assert.Nil(t, r.json(`$.paths./pets/{petID}.put`))
+			}
 
 			if slices.Contains(tt.ops, OperationDelete) {
 				assert.NotNil(t, r.json(`$.paths./pets/{petID}.delete`))

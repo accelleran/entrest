@@ -199,104 +199,32 @@ func GetSpecType(t *gen.Type, op Operation) (*ogen.Spec, error) { // nolint:funl
 			},
 		}
 	case OperationUpdate:
-		oper := &ogen.Operation{
-			Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
-			Summary: cmp.Or(
-				ta.GetOperationSummary(op),
-				"Update a "+CamelCase(entityName),
-			),
-			Description: cmp.Or(
-				ta.GetOperationDescription(op),
-				fmt.Sprintf("Update an existing %s entity. %s", entityName, eagerLoadDepthMessage),
-			),
-			OperationID: GetOperationIDName(op, t, nil),
-			Deprecated:  ta.Deprecated,
-			Parameters:  []*ogen.Parameter{},
-			RequestBody: ogen.NewRequestBody().
-				SetRequired(true).
-				SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Update"}),
-			Responses: ogen.Responses{
-				strconv.Itoa(http.StatusOK): ogen.NewResponse().
-					SetDescription(fmt.Sprintf("The update %s entity.", entityName)).
-					SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Read"}),
-			},
-		}
-
-		spec.Paths[GetPathName(op, t, nil, true)] = &ogen.PathItem{
-			Summary:     fmt.Sprintf("Operate on a single %s entity", entityName),
-			Description: fmt.Sprintf("Operate on a single %s entity by its ID.", entityName),
-			Patch:       oper,
-			Parameters: []*ogen.Parameter{
-				{Ref: "#/components/parameters/PrettyResponse"},
-				{Ref: "#/components/parameters/" + Singularize(t.Name) + "ID"},
-			},
-		}
+		buildMutationOperation(
+			spec, op, t, ta, entityName, eagerLoadDepthMessage,
+			"Update",
+			"Update an existing %s entity. %s",
+			"Update",
+			"update",
+			func(p *ogen.PathItem, o *ogen.Operation) { p.Patch = o },
+		)
 	case OperationUpsert:
-		oper := &ogen.Operation{
-			Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
-			Summary: cmp.Or(
-				ta.GetOperationSummary(op),
-				"Upsert a "+CamelCase(entityName),
-			),
-			Description: cmp.Or(
-				ta.GetOperationDescription(op),
-				fmt.Sprintf("Create a new %s entity, or partially update an existing one if it already exists (unprovided optional fields are preserved). %s", entityName, eagerLoadDepthMessage),
-			),
-			OperationID: GetOperationIDName(op, t, nil),
-			Deprecated:  ta.Deprecated,
-			Parameters:  []*ogen.Parameter{},
-			RequestBody: ogen.NewRequestBody().
-				SetRequired(true).
-				SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Upsert"}),
-			Responses: ogen.Responses{
-				strconv.Itoa(http.StatusOK): ogen.NewResponse().
-					SetDescription(fmt.Sprintf("The upserted %s entity.", entityName)).
-					SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Read"}),
-			},
-		}
-
-		spec.Paths[GetPathName(op, t, nil, true)] = &ogen.PathItem{
-			Summary:     fmt.Sprintf("Operate on a single %s entity", entityName),
-			Description: fmt.Sprintf("Operate on a single %s entity by its ID.", entityName),
-			Put:         oper,
-			Parameters: []*ogen.Parameter{
-				{Ref: "#/components/parameters/PrettyResponse"},
-				{Ref: "#/components/parameters/" + Singularize(t.Name) + "ID"},
-			},
-		}
+		buildMutationOperation(
+			spec, op, t, ta, entityName, eagerLoadDepthMessage,
+			"Upsert",
+			"Create a new %s entity, or partially update an existing one if it already exists (unprovided optional fields are preserved). %s",
+			"Upsert",
+			"upserted",
+			func(p *ogen.PathItem, o *ogen.Operation) { p.Put = o },
+		)
 	case OperationCreateOrReplace:
-		oper := &ogen.Operation{
-			Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
-			Summary: cmp.Or(
-				ta.GetOperationSummary(op),
-				"Replace a "+CamelCase(entityName),
-			),
-			Description: cmp.Or(
-				ta.GetOperationDescription(op),
-				fmt.Sprintf("Create a new %s entity, or fully replace an existing one if it already exists (unprovided optional fields are cleared). %s", entityName, eagerLoadDepthMessage),
-			),
-			OperationID: GetOperationIDName(op, t, nil),
-			Deprecated:  ta.Deprecated,
-			Parameters:  []*ogen.Parameter{},
-			RequestBody: ogen.NewRequestBody().
-				SetRequired(true).
-				SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Replace"}),
-			Responses: ogen.Responses{
-				strconv.Itoa(http.StatusOK): ogen.NewResponse().
-					SetDescription(fmt.Sprintf("The replaced %s entity.", entityName)).
-					SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Read"}),
-			},
-		}
-
-		spec.Paths[GetPathName(op, t, nil, true)] = &ogen.PathItem{
-			Summary:     fmt.Sprintf("Operate on a single %s entity", entityName),
-			Description: fmt.Sprintf("Operate on a single %s entity by its ID.", entityName),
-			Put:         oper,
-			Parameters: []*ogen.Parameter{
-				{Ref: "#/components/parameters/PrettyResponse"},
-				{Ref: "#/components/parameters/" + Singularize(t.Name) + "ID"},
-			},
-		}
+		buildMutationOperation(
+			spec, op, t, ta, entityName, eagerLoadDepthMessage,
+			"Replace",
+			"Create a new %s entity, or fully replace an existing one if it already exists (unprovided optional fields are cleared). %s",
+			"Replace",
+			"replaced",
+			func(p *ogen.PathItem, o *ogen.Operation) { p.Put = o },
+		)
 	case OperationRead:
 		oper := &ogen.Operation{
 			Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
@@ -872,6 +800,57 @@ func ErrorResponseObject(code int) *ogen.Schema {
 		},
 		Required: []string{"error", "type", "code", "timestamp"},
 	}
+}
+
+// buildMutationOperation creates an OpenAPI operation and path item for mutation operations
+// (Update, Upsert, CreateOrReplace) that operate on a single entity by ID.
+func buildMutationOperation(
+	spec *ogen.Spec,
+	op Operation,
+	t *gen.Type,
+	ta *Annotation,
+	entityName string,
+	eagerLoadDepthMessage string,
+	summaryVerb string, // e.g., "Update", "Upsert", "Replace"
+	descriptionText string, // e.g., "Update an existing %s entity"
+	schemaSuffix string, // e.g., "Update", "Upsert", "Replace"
+	responseVerb string, // e.g., "update", "upserted", "replaced"
+	setMethod func(*ogen.PathItem, *ogen.Operation), // e.g., sets Patch or Put field
+) {
+	oper := &ogen.Operation{
+		Tags: sliceCompact(sliceOr(ta.Tags, append([]string{Pluralize(t.Name)}, ta.AdditionalTags...))),
+		Summary: cmp.Or(
+			ta.GetOperationSummary(op),
+			summaryVerb+" a "+CamelCase(entityName),
+		),
+		Description: cmp.Or(
+			ta.GetOperationDescription(op),
+			fmt.Sprintf(descriptionText, entityName, eagerLoadDepthMessage),
+		),
+		OperationID: GetOperationIDName(op, t, nil),
+		Deprecated:  ta.Deprecated,
+		Parameters:  []*ogen.Parameter{},
+		RequestBody: ogen.NewRequestBody().
+			SetRequired(true).
+			SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + schemaSuffix}),
+		Responses: ogen.Responses{
+			strconv.Itoa(http.StatusOK): ogen.NewResponse().
+				SetDescription(fmt.Sprintf("The %s %s entity.", responseVerb, entityName)).
+				SetJSONContent(&ogen.Schema{Ref: "#/components/schemas/" + entityName + "Read"}),
+		},
+	}
+
+	pathItem := &ogen.PathItem{
+		Summary:     fmt.Sprintf("Operate on a single %s entity", entityName),
+		Description: fmt.Sprintf("Operate on a single %s entity by its ID.", entityName),
+		Parameters: []*ogen.Parameter{
+			{Ref: "#/components/parameters/PrettyResponse"},
+			{Ref: "#/components/parameters/" + Singularize(t.Name) + "ID"},
+		},
+	}
+	setMethod(pathItem, oper)
+
+	spec.Paths[GetPathName(op, t, nil, true)] = pathItem
 }
 
 // GetOperationIDName returns the operation ID for the given operation, type, and optional
