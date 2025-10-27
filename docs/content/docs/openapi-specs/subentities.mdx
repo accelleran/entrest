@@ -1,0 +1,109 @@
+---
+title: Subentities
+sidebar:
+  order: 4
+---
+
+## What are Subentities?
+
+**Subentities** are schemas that are designed to be accessed only through edges of their parent entities, rather than having their own top-level REST endpoints. They represent dependent or nested data that logically belongs to a parent entity.
+
+Common use cases for subentities include:
+- **Status objects** (e.g., `DeploymentStatus`, `OrderStatus`)
+- **Metadata objects** (e.g., `ProductDetails`, `UserPreferences`)
+- **Nested configuration** (e.g., `ServiceConfig`, `DatabaseSettings`)
+- **Address/contact information** (e.g., `Address`, `ContactInfo`)
+
+## How Subentities Work
+
+When you mark a schema as a subentity using `WithSubentity(true)`:
+
+- ✅ **Schema is included** in OpenAPI component definitions for documentation
+- ✅ **Edge endpoints still work** - can access via `/parent/{id}/subentity`
+- ✅ **Eager loading still works** - can be included in parent responses
+- ❌ **No top-level endpoints** - cannot access `/subentities` or `/subentities/{id}`
+- ❌ **No standalone operations** - no CREATE, READ, UPDATE, DELETE on the subentity itself
+
+## Annotation Comparison
+
+| Behavior | `WithSkip(true)` | `WithSubentity(true)` | `WithHandler(false)` |
+|----------|------------------|----------------------|---------------------|
+| **Schema Component in OpenAPI** | ❌ No | ✅ Yes | ✅ Yes |
+| **Top-level Endpoint Paths in OpenAPI** | ❌ No | ❌ No | ✅ Yes |
+| **Top-level Handler Functions** | ❌ No | ❌ No | ✅ Yes |
+| **Handler Mounting** | ❌ No | ❌ N/A | ❌ No |
+| **Edge Endpoints** | ❌ No | ✅ Yes* | ✅ Yes* |
+| **Eager Loading Works** | ❌ No | ✅ Yes | ✅ Yes |
+| **Included in Parent Responses** | ❌ No | ✅ Yes | ✅ Yes |
+
+*_Edge endpoints are enabled by default. Use `WithEdgeEndpoint(false)` to disable them._
+
+## How to Create/Update Subentities
+
+Since subentities can't be created via REST endpoints, they must be managed through parent operations:
+
+### **Option 1: Create subentity with parent**
+```http
+POST /pets
+{
+  "name": "Buddy",
+  "breed": "Golden Retriever",
+  "health": {
+    "status": "healthy",
+    "health_notes": "Recently vaccinated",
+    "last_checkup": "2024-01-15"
+  }
+}
+```
+
+### **Option 2: Update parent to modify subentity**
+```http
+PUT /pets/123
+{
+  "name": "Buddy",
+  "health": {
+    "status": "sick",
+    "health_notes": "Needs medication",
+    "last_checkup": "2024-01-20"
+  }
+}
+```
+
+### **Option 3: Direct Ent operations (server-side code)**
+```go
+// In your application code
+client.PetHealth.Create().
+    SetStatus("healthy").
+    SetHealthNotes("Annual checkup complete").
+    SetLastCheckup(time.Now()).
+    Save(ctx)
+```
+
+## Access Patterns for Subentities
+
+### **Pattern 1: Eager Loading (Always Included)**
+```go
+edge.To("health", PetHealth.Type).
+    Annotations(entrest.WithEagerLoad(true)),
+```
+```http
+GET /pets/123  # Health data automatically included
+{
+  "id": 123,
+  "name": "Buddy",
+  "health": { "status": "healthy", ... }
+}
+```
+
+### **Pattern 2: Edge Endpoints (Fetch When Needed)**
+```go
+edge.To("logs", PetMedicalLogs.Type).
+    Annotations(
+        entrest.WithSubentity(true),
+        entrest.WithEdgeEndpoint(true), // Enable edge endpoint
+    ),
+```
+```http
+GET /pets/123              # No logs included (performance)
+GET /pets/123/logs         # Fetch logs separately when needed
+```

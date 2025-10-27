@@ -102,6 +102,7 @@ type Annotation struct {
 	Filter             Predicate   `json:",omitempty" ent:"schema,edge,field"`
 	FilterGroup        string      `json:",omitempty" ent:"edge,field"`
 	DisableHandler     bool        `json:",omitempty" ent:"schema,edge"`
+	IsSubentity        bool        `json:",omitempty" ent:"schema"`
 	Sortable           bool        `json:",omitempty" ent:"field"`
 	DefaultSort        *string     `json:",omitempty" ent:"schema"`
 	DefaultOrder       *SortOrder  `json:",omitempty" ent:"schema"`
@@ -226,6 +227,7 @@ func (a Annotation) Merge(o schema.Annotation) schema.Annotation { // nolint:goc
 		a.FilterGroup = am.FilterGroup
 	}
 	a.DisableHandler = a.DisableHandler || am.DisableHandler
+	a.IsSubentity = a.IsSubentity || am.IsSubentity
 	a.Sortable = a.Sortable || am.Sortable
 	if am.DefaultSort != nil {
 		a.DefaultSort = am.DefaultSort
@@ -570,6 +572,12 @@ func WithFilterGroup(name string) Annotation {
 // you want to build upon them.
 func WithHandler(v bool) Annotation {
 	return Annotation{DisableHandler: !v}
+}
+
+// WithSubentity sets the schema to be a subentity that is only accessible through edges of 
+// parent entities. When true, no top-level endpoints are generated for this schema.
+func WithSubentity(v bool) Annotation {
+	return Annotation{IsSubentity: v}
 }
 
 // WithSortable sets the field to be sortable in the REST API. Note that only types that can be

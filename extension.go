@@ -132,7 +132,7 @@ func (e *Extension) Generate(g *gen.Graph) (*ogen.Spec, error) {
 	for _, t := range g.Nodes {
 		ta := GetAnnotation(t)
 
-		if ta.GetSkip(e.config) {
+		if ta.GetSkip(e.config) || ta.IsSubentity {
 			continue
 		}
 

@@ -21,6 +21,7 @@ Depending on the annotation used, it can only be applied in specific locations, 
 | Annotation | Usage Location | Description |
 |-------------------------------------------------------|---------------------------|------------------------------------------------------------------------------|
 | [WithSkip](#withskip) | <Usage types={["schema", "edge", "field"]} /> | Sets the schema, edge, or field to be skipped in the REST API. |
+| [WithSubentity](#withsubentity) | <Usage types={["schema"]} /> | Sets the schema to be a subentity accessible only through edges. |
 | [WithReadOnly](#withreadonly) | <Usage types={["field"]} /> | Sets the field to be read-only in the REST API. |
 | [WithExample](#withexample) | <Usage types={["field"]} /> | Sets the OpenAPI example for the specified field. |
 | [WithEagerLoad](#witheagerload) | <Usage types={["edge"]} /> | Sets the edge to be eager-loaded in the REST API for each associated entity. |
@@ -46,8 +47,8 @@ Depending on the annotation used, it can only be applied in specific locations, 
 | [WithEdgeUpdateBulk](#withedgeupdatebulk) | <Usage types={["edge"]} /> | Sets the edge to be bulk updated on the entities associated with the edge. |
 | [WithHandler](#withhandler) | <Usage types={["schema", "edge"]} /> | Sets the schema/edge to be an HTTP handler generated for it. |
 | [WithDeprecated](#withdeprecated) | <Usage types={["schema", "edge", "field"]} /> | Sets the OpenAPI deprecated flag for the specified schema/edge/field. |
-| [WithIncludeOperations](#withincludeoperations) | <Usage types={["schema", "edge"]} /> | Includes the specified operations in the REST API for the schema. |
-| [WithExcludeOperations](#withexcludeoperations) | <Usage types={["schema", "edge"]} /> | Excludes the specified operations in the REST API for the schema. |
+| [WithIncludeOperations](#withincludeoperations) | <Usage types={["schema", "edge"]} /> | Explicitly sets which operations are enabled, overriding Config.DefaultOperations entirely. |
+| [WithExcludeOperations](#withexcludeoperations) | <Usage types={["schema", "edge"]} /> | Excludes the specified operations from Config.DefaultOperations. |
 
 ### `WithSkip`
 
@@ -65,6 +66,25 @@ func (Pet) Fields() []ent.Field {
         field.String("some_sensitive_field").Annotations(
             entrest.WithSkip(true),
         ),
+    }
+}
+```
+
+### `WithSubentity`
+
+[ [pkg.go.dev](https://pkg.go.dev/github.com/lrstanley/entrest#WithSubentity) | usage: <Usage types={["schema"]} /> ]
+
+> Sets the schema to be a subentity that is only accessible through edges of parent entities.
+> When set to true, no top-level endpoints are generated for this schema. The schema is still
+> included in the OpenAPI specification as a component for response documentation, and can be
+> eager-loaded through edges from parent schemas.
+
+##### Example
+
+```go title="internal/database/schema/schema_pet.go" ins={3}
+func (PetHealth) Annotations() []ent.Annotation {
+    return []ent.Annotation{
+        entrest.WithSubentity(true),
     }
 }
 ```
