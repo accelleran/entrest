@@ -281,7 +281,7 @@ func GetSpecType(t *gen.Type, op Operation) (*ogen.Spec, error) { // nolint:funl
 			Parameters:  []*ogen.Parameter{},
 			Responses: ogen.Responses{
 				strconv.Itoa(http.StatusOK): ogen.NewResponse().
-					SetDescription(fmt.Sprintf("The requested %s.", entityName)).
+					SetDescription(fmt.Sprintf("The requested %s.", Pluralize(entityName))).
 					SetJSONContent(ogen.NewSchema().SetRef("#/components/schemas/" + entityName + "List")),
 			},
 		}
