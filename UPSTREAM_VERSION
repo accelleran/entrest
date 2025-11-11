@@ -1,0 +1,6 @@
+# Upstream Repository Tracking
+# This file tracks the upstream version that our fork is based on
+
+UPSTREAM_REPO=lrstanley/entrest
+UPSTREAM_VERSION=v1.0.2
+
