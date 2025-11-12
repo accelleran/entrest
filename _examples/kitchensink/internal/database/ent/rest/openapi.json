@@ -82,7 +82,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The requested Category.",
+                        "description": "The requested Categories.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
@@ -927,7 +927,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The requested Follow.",
+                        "description": "The requested Follows.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
@@ -1337,7 +1337,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The requested Friendship.",
+                        "description": "The requested Friendships.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
@@ -2267,7 +2267,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The requested Pet.",
+                        "description": "The requested Pets.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
@@ -3993,7 +3993,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The requested Post.",
+                        "description": "The requested Posts.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
@@ -4414,7 +4414,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The requested Setting.",
+                        "description": "The requested Settings.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
@@ -5634,7 +5634,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The requested User.",
+                        "description": "The requested Users.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
