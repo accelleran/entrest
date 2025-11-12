@@ -66,3 +66,27 @@ jobs:
         with:
           version: latest
           only-new-issues: true
+
+  examples-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Regenerate examples
+        run: make examples
+      - name: Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain _examples/)" ]; then
+            echo "❌ Generated example code is out of date!"
+            echo ""
+            echo "The following files have uncommitted changes:"
+            git status --porcelain _examples/
+            echo ""
+            echo "Please run 'make examples' locally and commit the changes."
+            exit 1
+          fi
+          echo "✅ Generated example code is up to date"
