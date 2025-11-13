@@ -2,6 +2,24 @@
   --sl-content-width: 65rem;
 }
 
+/* Accelleran orange banner styling */
+.sl-banner {
+  background: linear-gradient(135deg, #FF6B2C 0%, #FF8C42 100%) !important;
+  border-bottom: 2px solid #FF5630;
+  color: #1C252E !important;
+}
+
+.sl-banner a {
+  color: #1C252E !important;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.sl-banner a:hover {
+  color: #000000 !important;
+  text-decoration-thickness: 2px;
+}
+
 .sl-markdown-content :is(h1, h2, h3, h4, h5, h6) > a {
   color: var(--sl-color-white);
   text-decoration: none;

@@ -16,7 +16,7 @@ Common use cases for subentities include:
 
 ## How Subentities Work
 
-When you mark a schema as a subentity using `WithSubentity(true)`:
+When you mark a schema as a subentity using [`WithSubentity(true)`](/entrest/openapi-specs/annotation-reference/#withsubentity):
 
 - ✅ **Schema is included** in OpenAPI component definitions for documentation
 - ✅ **Edge endpoints still work** - can access via `/parent/{id}/subentity`
@@ -26,7 +26,7 @@ When you mark a schema as a subentity using `WithSubentity(true)`:
 
 ## Annotation Comparison
 
-| Behavior | `WithSkip(true)` | `WithSubentity(true)` | `WithHandler(false)` |
+| Behavior | [`WithSkip(true)`](/entrest/openapi-specs/annotation-reference/#withskip) | [`WithSubentity(true)`](/entrest/openapi-specs/annotation-reference/#withsubentity) | [`WithHandler(false)`](/entrest/openapi-specs/annotation-reference/#withhandler) |
 |----------|------------------|----------------------|---------------------|
 | **Schema Component in OpenAPI** | ❌ No | ✅ Yes | ✅ Yes |
 | **Top-level Endpoint Paths in OpenAPI** | ❌ No | ❌ No | ✅ Yes |
@@ -36,7 +36,7 @@ When you mark a schema as a subentity using `WithSubentity(true)`:
 | **Eager Loading Works** | ❌ No | ✅ Yes | ✅ Yes |
 | **Included in Parent Responses** | ❌ No | ✅ Yes | ✅ Yes |
 
-*_Edge endpoints are enabled by default. Use `WithEdgeEndpoint(false)` to disable them._
+*_Edge endpoints are enabled by default. Use [`WithEdgeEndpoint(false)`](/entrest/openapi-specs/annotation-reference/#withedgeendpoint) to disable them._
 
 ## How to Create/Update Subentities
 
@@ -100,7 +100,7 @@ GET /pets/123  # Health data automatically included
 edge.To("logs", PetMedicalLogs.Type).
     Annotations(
         entrest.WithSubentity(true),
-        entrest.WithEdgeEndpoint(true), // Enable edge endpoint
+        entrest.WithEdgeEndpoint(true),
     ),
 ```
 ```http

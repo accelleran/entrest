@@ -1,0 +1,45 @@
+---
+title: Fork Changelog
+description: Version history and changes in the Accelleran entrest fork
+sidebar:
+  order: 5
+---
+
+This changelog documents changes made in the Accelleran fork of entrest. For upstream changes, see the [official entrest releases](https://github.com/lrstanley/entrest/releases).
+
+## Version Format
+
+Fork versions follow the pattern: `v{FORK_MAJOR}.{FORK_MINOR}.{FORK_PATCH}+upstream.{UPSTREAM_VERSION}`
+
+Example: `v1.0.0+upstream.1.0.1` means fork version 1.0.0 based on upstream version 1.0.1.
+
+**Note:** Tags without the `+upstream.` suffix (e.g., `v1.0.2`, `v1.0.1`) are upstream releases from [lrstanley/entrest](https://github.com/lrstanley/entrest), not fork releases.
+
+---
+
+## [Unreleased]
+
+Based on upstream [entrest v1.0.2](https://github.com/lrstanley/entrest/releases/tag/v1.0.2).
+
+### Added
+- **Upsert operation** ([`OperationUpsert`](/entrest/openapi-specs/upsert-operations/#operationupsert-partial-updates)) - PUT endpoint with partial update semantics (preserves unprovided optional fields)
+- **Create-or-Replace operation** ([`OperationCreateOrReplace`](/entrest/openapi-specs/upsert-operations/#operationcreateorreplace-full-replacement)) - PUT endpoint with full replacement semantics (clears unprovided optional fields)
+- **Subentities** ([docs](/entrest/openapi-specs/subentities/)) - Schemas accessible only through parent edges, without top-level REST endpoints (useful for dependent/nested data like status objects, metadata, or configuration)
+- **`WrapUnpagedResults` config option** ([docs](/entrest/openapi-specs/configuration/#wrapunpagedresults)) - Return objects instead of arrays for unpaged list operations
+
+### Fixed
+- [Eager loading](/entrest/openapi-specs/eager-loading/) now works for schemas with no operations configured
+- [`WithExcludeOperations`](/entrest/openapi-specs/annotation-reference/#withexcludeoperations) now properly excludes operations from configured defaults
+- Non-paginated list operations now return correct pointer types (related to [`WrapUnpagedResults`](/entrest/openapi-specs/configuration/#wrapunpagedresults))
+- List endpoint response descriptions now use properly pluralized entity names
+
+---
+
+## [v1.0.0+upstream.1.0.1] - 2024
+
+Based on upstream [entrest v1.0.1](https://github.com/lrstanley/entrest/releases/tag/v1.0.1).
+
+### Added
+- Initial fork release
+
+

@@ -7,7 +7,7 @@ export const collections = {
       extend: z.object({
         // global banner thanks to: https://hideoo.dev/notes/starlight-sitewide-banner
         banner: z.object({ content: z.string() }).default({
-          content: `Documentation &amp; entrest itself are a work in progress (expect breaking changes). Check out the <a href="https://github.com/lrstanley/entrest" target="_blank">GitHub Project</a> to contribute.`,
+          content: `⚠️ This is a <strong>fork</strong> of <a href="https://github.com/lrstanley/entrest" target="_blank">lrstanley/entrest</a> with additional features. For the official documentation, visit <a href="https://lrstanley.github.io/entrest/" target="_blank">lrstanley.github.io/entrest</a>.`,
         }),
       }),
     }),

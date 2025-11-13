@@ -1,0 +1,50 @@
+---
+title: Using This Fork
+description: How to use the Accelleran entrest fork in your project
+sidebar:
+  order: 0
+---
+
+This is a fork of [lrstanley/entrest](https://github.com/lrstanley/entrest) with additional features.
+
+For a complete list of changes and new features in this fork, see the [Fork Changelog](/entrest/resources/changelog/).
+
+## Installation
+
+To use this fork in your project, you have two options:
+
+### Option 1: Using Go Module Replace (Recommended)
+
+This approach maintains compatibility with the upstream module path, making it easier to switch back to upstream or merge upstream changes.
+
+Add this to your `go.mod`:
+
+```go
+require github.com/lrstanley/entrest v1.0.2
+
+replace github.com/lrstanley/entrest => github.com/accelleran/entrest v1.x.x
+```
+
+Then in your code, continue using the original import path:
+
+```go
+import "github.com/lrstanley/entrest"
+```
+
+### Option 2: Direct Import
+
+Alternatively, if you change all your imports to use the fork directly:
+
+```bash
+go get github.com/accelleran/entrest@latest
+```
+
+```go
+import "github.com/accelleran/entrest"
+```
+
+:::caution[Module Path Behavior]
+Because this fork maintains the original module path in its `go.mod`, pkg.go.dev will redirect
+`github.com/accelleran/entrest` to `github.com/lrstanley/entrest`. This is intentional and allows
+for seamless use of `replace` directives.
+:::

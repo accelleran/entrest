@@ -6,7 +6,7 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 
 // https://astro.build/config
 export default defineConfig({
-    site: "https://lrstanley.github.io",
+    site: "https://accelleran.github.io",
     base: "/entrest",
     srcDir: "./",
     trailingSlash: "always",
@@ -21,12 +21,11 @@ export default defineConfig({
             },
             favicon: "/favicon.png",
             social: {
-                github: "https://github.com/lrstanley/entrest",
-                discord: "https://liam.sh/chat",
+                github: "https://github.com/accelleran/entrest",
             },
             lastUpdated: true,
             editLink: {
-                baseUrl: "https://github.com/lrstanley/entrest/edit/master/docs/",
+                baseUrl: "https://github.com/accelleran/entrest/edit/master/docs/",
             },
             customCss: ["./assets/main.css"],
             head: [
@@ -85,21 +84,14 @@ export default defineConfig({
                     items: [
                         {
                             label: "Contributing",
-                            link: "https://github.com/lrstanley/entrest/blob/master/.github/CONTRIBUTING.md",
+                            link: "https://github.com/accelleran/entrest/blob/master/.github/CONTRIBUTING.md",
                             attrs: {
                                 target: "_blank",
                             },
                         },
                         {
                             label: "GitHub Project",
-                            link: "https://github.com/lrstanley/entrest",
-                            attrs: {
-                                target: "_blank",
-                            },
-                        },
-                        {
-                            label: "pkg.go.dev docs",
-                            link: "https://pkg.go.dev/github.com/lrstanley/entrest",
+                            link: "https://github.com/accelleran/entrest",
                             attrs: {
                                 target: "_blank",
                             },

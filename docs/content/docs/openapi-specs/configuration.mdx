@@ -1,7 +1,380 @@
 ---
-title: Configuration
+title: Configuration Reference
 sidebar:
   order: 1
 ---
 
-TODO. See [entrest.Config](https://pkg.go.dev/github.com/lrstanley/entrest#Config) for all available options.
+import { Aside } from '@astrojs/starlight/components';
+
+This page documents all available configuration options for the `entrest.Config` struct.
+
+## Basic Setup
+
+Configuration is provided when creating the extension:
+
+```go title="internal/database/entc.go"
+import "github.com/lrstanley/entrest"
+
+ex, err := entrest.NewExtension(&entrest.Config{
+    Handler: entrest.HandlerStdlib,
+    // ... other options
+})
+```
+
+## OpenAPI Spec Configuration
+
+### `Spec`
+
+**Type:** `*ogen.Spec` | **Default:** `nil`
+
+An optional base OpenAPI spec to merge all generated endpoints/schemas into. Allows you to specify API info, servers, security schemes, etc.
+
+```go
+Config{
+    Spec: &ogen.Spec{
+        Info: ogen.Info{
+            Title:   "My API",
+            Version: "1.0.0",
+        },
+    },
+}
+```
+
+<Aside type="caution">
+Cannot be used together with `SpecFromPath`.
+</Aside>
+
+### `SpecFromPath`
+
+**Type:** `string` | **Default:** `""`
+
+Similar to `Spec`, but reads the spec from a JSON file path. Easier to maintain than building the spec in code.
+
+```go
+Config{
+    SpecFromPath: "_examples/kitchensink/base-openapi.json",
+}
+```
+
+See [Extending the OpenAPI Spec](/entrest/openapi-specs/extending/) for more details.
+
+### `DisableSpecHandler`
+
+**Type:** `bool` | **Default:** `false`
+
+Disables generation of an OpenAPI spec handler (e.g. `/openapi.json`). Also disables embedding the spec into the binary.
+
+---
+
+## Pagination Configuration
+
+### `DisablePagination`
+
+**Type:** `bool` | **Default:** `false`
+
+Disables pagination support for all schemas by default. Can still be enabled per-schema with [`WithPagination`](/entrest/openapi-specs/annotation-reference/#withpagination).
+
+### `WrapUnpagedResults`
+
+**Type:** `bool` | **Default:** `false`
+
+When pagination is disabled, wraps list results in response objects instead of plain arrays.
+
+**Without wrapping:**
+```json
+[{ "id": 1, "name": "Alice" }, { "id": 2, "name": "Bob" }]
+```
+
+**With wrapping:**
+```json
+{
+  "content": [{ "id": 1, "name": "Alice" }, { "id": 2, "name": "Bob" }]
+}
+```
+
+### `ItemsPerPage`
+
+**Type:** `int` | **Default:** `30`
+
+Default number of items per page for paginated calls. Can be overridden per-schema with [`WithItemsPerPage`](/entrest/openapi-specs/annotation-reference/#withitemsperpage).
+
+### `MinItemsPerPage`
+
+**Type:** `int` | **Default:** `1`
+
+Minimum number of items per page that clients can request. Can be overridden per-schema with [`WithMinItemsPerPage`](/entrest/openapi-specs/annotation-reference/#withminitemsperpage).
+
+### `MaxItemsPerPage`
+
+**Type:** `int` | **Default:** `100`
+
+Maximum number of items per page that clients can request. Can be overridden per-schema with [`WithMaxItemsPerPage`](/entrest/openapi-specs/annotation-reference/#withmaxitemsperpage).
+
+See [Pagination](/entrest/openapi-specs/pagination/) for more details.
+
+---
+
+## Eager Loading Configuration
+
+### `DefaultEagerLoad`
+
+**Type:** `bool` | **Default:** `false`
+
+Enables eager loading of all edges by default. Can be overridden per-edge with [`WithEagerLoad`](/entrest/openapi-specs/annotation-reference/#witheagerload).
+
+<Aside type="caution">
+Not recommended if edges load lots of data or are expensive to query.
+</Aside>
+
+### `EagerLoadLimit`
+
+**Type:** `int` | **Default:** `1000`
+
+Maximum number of results that can be eager-loaded for a given edge. Prevents potential abuse/resource exhaustion. Set to `-1` to disable the limit.
+
+Can be overridden per-edge with [`WithEagerLoadLimit`](/entrest/openapi-specs/annotation-reference/#witheagerloadlimit).
+
+### `DisableEagerLoadNonPagedOpt`
+
+**Type:** `bool` | **Default:** `false`
+
+Disables the optimization that automatically disables pagination for edge endpoints when the edge is also eager-loaded.
+
+**Default behavior:** If an edge is eager-loaded, the assumption is the data set isn't large enough to justify pagination overhead, so pagination is disabled for that edge's endpoint.
+
+### `DisableEagerLoadedEndpoints`
+
+**Type:** `bool` | **Default:** `false`
+
+Disables generation of dedicated endpoints for edges that are also eager-loaded.
+
+**Example:** If `Pet.owner` is eager-loaded, setting this to `true` disables the `/pets/{id}/owner` endpoint (since you can get the owner from `/pets/{id}`).
+
+Can be overridden per-edge with [`WithEdgeEndpoint`](/entrest/openapi-specs/annotation-reference/#withedgeendpoint).
+
+### `AddEdgesToTags`
+
+**Type:** `bool` | **Default:** `false`
+
+Adds edge fields to the OpenAPI "tags" field. Helpful to see if querying an entity also returns related data, but can be noisy for large schemas.
+
+<Aside>
+Edge endpoints (e.g. `/users/{id}/pets`) always have both tags (`User` and `Pet`). This only affects eager-loaded edges.
+</Aside>
+
+See [Eager Loading](/entrest/openapi-specs/eager-loading/) for more details.
+
+---
+
+## Operations Configuration
+
+### `DefaultOperations`
+
+**Type:** `[]Operation` | **Default:** `[Create, Read, Update, Delete, List]`
+
+List of operations to generate by default. Can be overridden per-schema with [`WithIncludeOperations`](/entrest/openapi-specs/annotation-reference/#withincludeoperations) or [`WithExcludeOperations`](/entrest/openapi-specs/annotation-reference/#withexcludeoperations).
+
+```go
+Config{
+    DefaultOperations: []entrest.Operation{
+        entrest.OperationCreate,
+        entrest.OperationRead,
+        entrest.OperationList,
+    },
+}
+```
+
+<Aside type="tip" title="Fork-Specific Operations">
+This fork adds two new operations:
+- `OperationUpsert` - Create or partially update (preserves unprovided optional fields)
+- `OperationCreateOrReplace` - Create or fully replace (clears unprovided optional fields)
+
+These are **not** included by default as they require explicitly defined ID fields.
+
+See [Upsert & Replace Operations](/entrest/openapi-specs/upsert-operations/) for detailed documentation and examples.
+</Aside>
+
+### `AllowClientIDs`
+
+**Type:** `bool` | **Default:** `false`
+
+Allows clients to provide the `id` field in CREATE payloads. Beneficial for:
+- UUID primary keys (idempotency)
+- Username/slug as ID fields
+
+Can be enabled per-schema with [`WithAllowClientIDs`](/entrest/openapi-specs/annotation-reference/#withallowclientids).
+
+<Aside type="caution" title="Security Warning">
+Allowing client-provided IDs can enable resource spoofing attacks if a previously deleted resource is recreated with the same ID. Add validation/permissions or disallow deletions.
+</Aside>
+
+---
+
+## Filtering Configuration
+
+### `DefaultFilterID`
+
+**Type:** `bool` | **Default:** `false`
+
+Enables default filtering for ID fields (applies `FilterGroupEqualExact` and `FilterGroupArray`). Helpful if you don't explicitly declare your `id` field in schemas (as it's handled by Ent by default).
+
+See [Filtering](/entrest/openapi-specs/annotation-reference/#withfilter) for more details.
+
+---
+
+## Request/Response Configuration
+
+### `GlobalRequestHeaders`
+
+**Type:** `RequestHeaders` | **Default:** `nil`
+
+Headers to add to every request (optional or required). Examples: `X-Request-Id`, `X-Correlation-ID`, API version headers.
+
+<Aside>
+Do **not** use for authentication - use security schemes in the OpenAPI spec instead.
+</Aside>
+
+### `GlobalResponseHeaders`
+
+**Type:** `ResponseHeaders` | **Default:** `nil`
+
+Headers to add to every response. Recommended for rate limiting headers:
+- `X-Ratelimit-Limit`
+- `X-Ratelimit-Remaining`
+- `X-Ratelimit-Reset`
+
+### `GlobalErrorResponses`
+
+**Type:** `ErrorResponses` | **Default:** `DefaultErrorResponses`
+
+Status code → response mappings for errors, added to all operations. Some status codes are excluded on specific operations (e.g. 404 on list, 409 on non-create/update).
+
+---
+
+## Handler Configuration
+
+### `Handler`
+
+**Type:** `HTTPHandler` | **Default:** `HandlerNone`
+
+Enables generation of HTTP handlers for the specified router library.
+
+**Available options:**
+- `HandlerNone` - Only generate OpenAPI spec, no Go code
+- `HandlerStdlib` - Use `net/http` stdlib router (Go 1.22+ path matching)
+- `HandlerChi` - Use Chi router (v5.0.12+)
+
+```go
+Config{
+    Handler: entrest.HandlerStdlib,
+}
+```
+
+### `WithTesting`
+
+**Type:** `bool` | **Default:** `false`
+
+Generates a `resttest` package with helpers for testing the REST API. Only works when `Handler` is not `HandlerNone`.
+
+### `StrictMutate`
+
+**Type:** `bool` | **Default:** `false`
+
+Returns `400 Bad Request` if unknown fields are provided in create/update requests. Ensures clients don't attempt to set undefined fields.
+
+### `ListNotFound`
+
+**Type:** `bool` | **Default:** `false`
+
+Returns `404 Not Found` if a list endpoint returns no results (with any filtering).
+
+**Default behavior:** Returns `200 OK` with empty results array.
+
+### `DisablePatchJSONTag`
+
+**Type:** `bool` | **Default:** `false`
+
+Disables the Ent generation hook that removes `omitempty` from JSON tags. The hook ensures fields with defaults/optional fields still appear in JSON responses.
+
+---
+
+## Advanced/Hooks Configuration
+
+### `PreGenerateHook`
+
+**Type:** `func(g *gen.Graph, spec *ogen.Spec) error`
+
+Hook that runs before spec generation. Useful for adding global security schemes or request headers if you can't provide the `Spec` field.
+
+```go
+Config{
+    PreGenerateHook: func(g *gen.Graph, spec *ogen.Spec) error {
+        // Add custom logic
+        return nil
+    },
+}
+```
+
+### `PostGenerateHook`
+
+**Type:** `func(g *gen.Graph, spec *ogen.Spec) error`
+
+Hook that runs after spec generation but before applying global headers/error codes and writing to disk. Recommended for adding custom paths that should also receive global headers.
+
+### `PreWriteHook`
+
+**Type:** `func(spec *ogen.Spec) error`
+
+Hook that runs directly before writing to disk, after the entire spec has been resolved.
+
+### `Writer`
+
+**Type:** `io.Writer`
+
+Optional writer for the spec output. If not provided, writes to `<ent>/rest/openapi.json`.
+
+### `Templates`
+
+**Type:** `[]*gen.Template`
+
+Universal templates that can add or replace existing templates for custom code generation.
+
+See [Extending the OpenAPI Spec](/entrest/openapi-specs/extending/) for hook examples.
+
+---
+
+## Configuration Examples
+
+### Basic REST API
+```go
+ex, err := entrest.NewExtension(&entrest.Config{
+    Handler: entrest.HandlerStdlib,
+})
+```
+
+### Unpaginated API with Client IDs
+```go
+ex, err := entrest.NewExtension(&entrest.Config{
+    Handler:            entrest.HandlerStdlib,
+    DisablePagination:  true,
+    WrapUnpagedResults: true,
+    AllowClientIDs:     true,
+})
+```
+
+### With Eager Loading
+```go
+ex, err := entrest.NewExtension(&entrest.Config{
+    Handler:         entrest.HandlerStdlib,
+    EagerLoadLimit:  500,
+    DefaultEagerLoad: false, // Enable per-edge instead
+})
+```
+
+### With Custom Spec
+```go
+ex, err := entrest.NewExtension(&entrest.Config{
+    Handler:      entrest.HandlerChi,
+    SpecFromPath: "base-openapi.json",
+})
+```

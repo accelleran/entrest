@@ -13,7 +13,7 @@ spec.
 
 ### `SpecFromPath`
 
-Configuration option [`SpecFromPath`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.SpecFromPath) allows
+The [`SpecFromPath`](/entrest/openapi-specs/configuration/#specfrompath) config option allows
 you to provide a path to a JSON file containing the base OpenAPI spec. This is useful if you want to start with a
 base spec, and then add additional endpoints/security schemes/etc. This is the simplest option to managing extensions
 that is much less tedious than dealing with the `Spec` option.
@@ -34,7 +34,7 @@ Base OpenAPI spec from our kitchensink example, where we register a `/version` e
 <Code code={baseOpenAPI} lang="json" title="_examples/kitchensink/base-openapi.json" />
 
 Take a look at the resulting OpenAPI spec, which includes the `/version` endpoint and associated schema
-[here](https://github.com/lrstanley/entrest/blob/master/_examples/kitchensink/internal/database/ent/rest/openapi.json).
+[here](https://github.com/accelleran/entrest/blob/master/_examples/kitchensink/internal/database/ent/rest/openapi.json).
 
 ### Request Headers
 
@@ -50,7 +50,7 @@ TODO
 
 ### `Spec` Configuration Option
 
-Configuration option [`Spec`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.Spec) allows you to provide
+The [`Spec`](/entrest/openapi-specs/configuration/#spec) config option allows you to provide
 a custom OpenAPI spec through the `ogen.Spec` type provided by [ogen](https://github.com/ogen-go/ogen). This is
 more of an advanced option, as it allows you to use additional Go logic to add additional generated endpoints or
 similar. This spec is effectively treated like the "base" in which the generated spec is merged into. A basic
@@ -77,8 +77,7 @@ func main() {
 
 ### `PreGenerateHook` and `PostGenerateHook`
 
-Configuration option [`PreGenerateHook`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.PreGenerateHook)
-and [`PostGenerateHook`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.PostGenerateHook) are
+The [`PreGenerateHook`](/entrest/openapi-specs/configuration/#pregeneratehook) and [`PostGenerateHook`](/entrest/openapi-specs/configuration/#postgeneratehook) config options are
 similar to the `Spec` option, but you get access to the ent graph. Primarily useful if you need to
 extend the spec with ent-specific information, or you want to reuse content from the generated configuration,
 and build upon it.

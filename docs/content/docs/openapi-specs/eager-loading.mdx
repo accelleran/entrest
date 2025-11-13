@@ -67,17 +67,15 @@ func (Pet) Edges() []ent.Edge {
 ### Additional configuration
 
 - The default maximum number of results that can be eager-loaded for a given edge can be controlled
-  with the config option [`EagerLoadLimit`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.EagerLoadLimit),
+  with the [`EagerLoadLimit`](/entrest/openapi-specs/configuration/#eagerloadlimit) config option
   and associated [`WithEagerLoadLimit`](/entrest/openapi-specs/annotation-reference/#witheagerloadlimit)
   annotation.
 - If you eager load an edge, by default the associated edge endpoint will have its pagination turned off.
-  This can be turned off with the config option [`DisableEagerLoadNonPagedOpt`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.DisableEagerLoadedEndpoints).
+  This can be turned off with the [`DisableEagerLoadNonPagedOpt`](/entrest/openapi-specs/configuration/#disableeagerloadnonpagedopt) config option.
 - If you only ever want to eager load a specific edge and not have a dedicated endpoint, you can use
   the [`WithEdgeEndpoint`](/entrest/openapi-specs/annotation-reference/#withedgeendpoint) annotation
-  to disable the edge endpoint. This can also be configured globally with the config option
-  [`DisableEagerLoadedEndpoints`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.DisableEagerLoadedEndpoints).
-- All edges can be eager loaded by default (though highly discouraged). See the config option
-  [`DefaultEagerLoad`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.DefaultEagerLoad).
+  to disable the edge endpoint. This can also be configured globally with the [`DisableEagerLoadedEndpoints`](/entrest/openapi-specs/configuration/#disableeagerloadedendpoints) config option.
+- All edges can be eager loaded by default (though highly discouraged). See the [`DefaultEagerLoad`](/entrest/openapi-specs/configuration/#defaulteagerload) config option.
 
 ### When should you not eager load?
 
@@ -91,7 +89,7 @@ It's also worth noting that this could be used as an attack vector (i.e. denial-
 If a user is in control of an association, and intentionally adds additional entities to the association,
 they could overwhelm consumers of your API (response times, memory usage, total response sizes, etc).
 As such, **entrest sets a default limit for the number of eager loaded results**. This can be controlled
-via the config option [`EagerLoadLimit`](https://pkg.go.dev/github.com/lrstanley/entrest#Config.EagerLoadLimit),
+via the [`EagerLoadLimit`](/entrest/openapi-specs/configuration/#eagerloadlimit) config option
 and associated [`WithEagerLoadLimit`](/entrest/openapi-specs/annotation-reference/#witheagerloadlimit)
 annotation.
 

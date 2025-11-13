@@ -19,13 +19,11 @@ where that may apply.
 Pagination has a few configuration options in a few locations:
 
 - Turning pagination on/off.
-  - **Globally**: with the `DisablePagination` [config](https://pkg.go.dev/github.com/lrstanley/entrest#Config)
-    option.
+  - **Globally**: with the [`DisablePagination`](/entrest/openapi-specs/configuration/#disablepagination) config option.
   - **Per-schema**: with the [`WithPagination`](/entrest/openapi-specs/annotation-reference/#withpagination)
     annotation.
 - Adjusting the default, minimum and maximum number of results per page.
-  - **Globally**: with the `ItemsPerPage`, `MinItemsPerPage`, and `MaxItemsPerPage`
-    [config](https://pkg.go.dev/github.com/lrstanley/entrest#Config) options.
+  - **Globally**: with the [`ItemsPerPage`](/entrest/openapi-specs/configuration/#itemsperpage), [`MinItemsPerPage`](/entrest/openapi-specs/configuration/#minitemsperpage), and [`MaxItemsPerPage`](/entrest/openapi-specs/configuration/#maxitemsperpage) config options.
   - **Per-schema**: with the [`WithItemsPerPage`](/entrest/openapi-specs/annotation-reference/#withitemsperpage),
     [`WithMinItemsPerPage`](/entrest/openapi-specs/annotation-reference/#withminitemsperpage), and
     [`WithMaxItemsPerPage`](/entrest/openapi-specs/annotation-reference/#withmaxitemsperpage) annotations.
