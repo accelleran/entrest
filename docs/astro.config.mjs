@@ -11,6 +11,9 @@ export default defineConfig({
     srcDir: "./",
     trailingSlash: "always",
     contentDir: "./content",
+    redirects: {
+        "/": "/entrest/guides/fork-usage/",
+    },
     integrations: [
         starlight({
             title: "Ent Rest Extension",
