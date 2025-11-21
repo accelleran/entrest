@@ -52,8 +52,15 @@
                 builder.Set{{ $f.StructField }}({{ $receiver }}.{{ $f.StructField }})
             {{- end }}
         {{- else }}
-            {{- /* edge.From without explicit backing field - skip as Ent doesn't generate setter methods for these in PostUpsert */ -}}
-            {{- continue }}
+            {{- if not $e.Unique }}
+                builder.Add{{ $e.Name|zsingular|pascal }}IDs({{ $receiver }}.{{ $e.StructField }}...)
+            {{- else if $e.Optional }}
+                if {{ $receiver }}.{{ $e.StructField }} != nil {
+                    builder.Set{{ $e.StructField }}ID(*{{ $receiver }}.{{ $e.StructField }})
+                }
+            {{- else }}
+                builder.Set{{ $e.StructField }}ID({{ $receiver }}.{{ $e.StructField }})
+            {{- end }}
         {{- end }}
     {{- end }}
     return builder

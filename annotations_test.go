@@ -207,3 +207,141 @@ func TestAnnotation_EdgeUpdateBulk(t *testing.T) {
 	assert.NotNil(t, r.json(`$.components.schemas.PetUpdate.properties.add_friends`))
 	assert.NotNil(t, r.json(`$.components.schemas.PetUpdate.properties.remove_friends`))
 }
+
+func TestAnnotation_EdgesInUpsert(t *testing.T) {
+	t.Parallel()
+
+	t.Run("optional-edge-in-upsert", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				// Add upsert operation to Pet and include owner edge in upsert
+				injectAnnotations(t, g, "Pet",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationUpsert,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				injectAnnotations(t, g, "Pet.owner",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationUpdate,
+						OperationUpsert,
+					),
+				)
+				return nil
+			},
+		})
+
+		// Verify Upsert schema includes the owner edge
+		assert.NotNil(t, r.json(`$.components.schemas.PetUpsert`), "PetUpsert schema should exist")
+		assert.NotNil(t, r.json(`$.components.schemas.PetUpsert.properties.owner`), "PetUpsert should include owner edge")
+		assert.Equal(t, "string", r.json(`$.components.schemas.PetUpsert.properties.owner.type`))
+
+		// Verify consistency with Create and Update
+		assert.NotNil(t, r.json(`$.components.schemas.PetCreate.properties.owner`))
+		assert.NotNil(t, r.json(`$.components.schemas.PetUpdate.properties.owner`))
+	})
+
+	t.Run("edge-in-create-or-replace", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				injectAnnotations(t, g, "Pet",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationCreateOrReplace,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				injectAnnotations(t, g, "Pet.owner",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationUpdate,
+						OperationCreateOrReplace,
+					),
+				)
+				return nil
+			},
+		})
+
+		// Verify Replace schema includes the owner edge
+		assert.NotNil(t, r.json(`$.components.schemas.PetReplace`))
+		assert.NotNil(t, r.json(`$.components.schemas.PetReplace.properties.owner`))
+		assert.Equal(t, "string", r.json(`$.components.schemas.PetReplace.properties.owner.type`))
+	})
+
+	t.Run("non-unique-edge-in-upsert", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				// Category has a non-unique edge to Pet (pets)
+				injectAnnotations(t, g, "Category",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationUpsert,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				injectAnnotations(t, g, "Category.pets",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationUpdate,
+						OperationUpsert,
+					),
+				)
+				return nil
+			},
+		})
+
+		// Verify Upsert schema includes the pets edge as an array
+		assert.NotNil(t, r.json(`$.components.schemas.CategoryUpsert`))
+		assert.NotNil(t, r.json(`$.components.schemas.CategoryUpsert.properties.pets`))
+		assert.Equal(t, "array", r.json(`$.components.schemas.CategoryUpsert.properties.pets.type`))
+		assert.Equal(t, "integer", r.json(`$.components.schemas.CategoryUpsert.properties.pets.items.type`))
+	})
+
+	t.Run("edge-excluded-from-upsert", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				injectAnnotations(t, g, "Pet",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationUpsert,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				// Explicitly exclude owner from upsert
+				injectAnnotations(t, g, "Pet.owner",
+					WithExcludeOperations(OperationUpsert),
+				)
+				return nil
+			},
+		})
+
+		// Verify Upsert schema exists but does NOT include the owner edge
+		assert.NotNil(t, r.json(`$.components.schemas.PetUpsert`))
+		assert.Nil(t, r.json(`$.components.schemas.PetUpsert.properties.owner`))
+
+		// But it should still be in Create
+		assert.NotNil(t, r.json(`$.components.schemas.PetCreate.properties.owner`))
+	})
+}
