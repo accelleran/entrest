@@ -49,8 +49,12 @@
                 {{ $f.StructField }} {{ $f.Type }} {{ template "helper/rest/fields/tag" (dict "Field" $f) }}
             {{- end }}
         {{- else }}
-            {{- /* edge.From without explicit backing field - skip as Ent doesn't generate setter methods for these in PostUpsert */ -}}
-            {{- continue }}
+            {{- template "helper/rest/fields/comment" $e }}
+            {{- if $e.Optional }}
+                {{ $e.StructField }} {{ if not $e.Unique }}[]{{else }}*{{ end }}{{ $e.Type.ID.Type }} {{ template "helper/rest/edge/tag" (dict "Edge" $e) }}
+            {{- else }}
+                {{ $e.StructField }} {{ $e.Type.ID.Type }} {{ template "helper/rest/edge/tag" (dict "Edge" $e) }}
+            {{- end }}
         {{- end }}
     {{- end }}
 {{- end }}

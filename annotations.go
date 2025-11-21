@@ -574,7 +574,7 @@ func WithHandler(v bool) Annotation {
 	return Annotation{DisableHandler: !v}
 }
 
-// WithSubentity sets the schema to be a subentity that is only accessible through edges of 
+// WithSubentity sets the schema to be a subentity that is only accessible through edges of
 // parent entities. When true, no top-level endpoints are generated for this schema.
 func WithSubentity(v bool) Annotation {
 	return Annotation{IsSubentity: v}
