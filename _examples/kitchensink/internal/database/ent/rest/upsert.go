@@ -9,9 +9,70 @@ import (
 	github "github.com/google/go-github/v66/github"
 	uuid "github.com/google/uuid"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent"
+	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/category"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/user"
 	schema "github.com/lrstanley/entrest/_examples/kitchensink/internal/database/schema"
 )
+
+// UpsertCategoryParams defines parameters for upserting a Category via a PUT request.
+// Only includes fields/edges not excluded from upsert operations.
+// Upsert performs partial updates: only provided fields are updated, unprovided optional fields retain their existing values.
+type UpsertCategoryParams struct {
+	Name     string   `json:"name"`
+	Nillable *string  `json:"nillable"`
+	Strings  []string `json:"strings,omitempty"`
+	Ints     []int    `json:"ints,omitempty"`
+	Pets     []int    `json:"pets,omitempty"`
+}
+
+func (u *UpsertCategoryParams) ApplyInputs(builder *ent.CategoryCreate) *ent.CategoryCreate {
+	builder.SetName(u.Name)
+	if u.Nillable != nil {
+		builder.SetNillable(*u.Nillable)
+	}
+	if u.Strings != nil {
+		builder.SetStrings(u.Strings)
+	}
+	if u.Ints != nil {
+		builder.SetInts(u.Ints)
+	}
+	return builder
+}
+
+// Exec wraps all logic (mapping all provided values to the builder), upserts the entity
+// (creating it if it doesn't exist or updating it if it does), and does another query
+// (using provided query as base) to get the entity, with all eager loaded edges.
+func (u *UpsertCategoryParams) Exec(ctx context.Context, id int, builder *ent.CategoryCreate, query *ent.CategoryQuery, updater *ent.CategoryUpdateOne) (*ent.Category, error) {
+	// Set the ID for the upsert operation
+	builder.SetID(id)
+
+	// Apply all inputs from the params (fields and M2O edges only; M2M handled separately)
+	builder = u.ApplyInputs(builder)
+
+	// Perform upsert with OnConflict - partial update mode (PATCH-like semantics via PUT)
+	// Only provided fields are updated; unprovided optional fields retain their existing values
+	err := builder.OnConflictColumns(category.FieldID).UpdateNewValues().Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if u.Pets != nil {
+		// Field was explicitly provided in the request (could be empty array or have values)
+		// Always clear first to ensure replace semantics (not append)
+		edgeUpdater := updater.ClearPets()
+		if len(u.Pets) > 0 {
+			// Add the new edge IDs
+			edgeUpdater = edgeUpdater.AddPetIDs(u.Pets...)
+		}
+		// If empty array was provided, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Fetch the entity with eager-loaded edges
+	return EagerLoadCategory(query.Where(category.ID(id))).Only(ctx)
+}
 
 // UpsertUserParams defines parameters for upserting a User via a PUT request.
 // Only includes fields/edges not excluded from upsert operations.
@@ -75,11 +136,11 @@ func (u *UpsertUserParams) ApplyInputs(builder *ent.UserCreate) *ent.UserCreate 
 // Exec wraps all logic (mapping all provided values to the builder), upserts the entity
 // (creating it if it doesn't exist or updating it if it does), and does another query
 // (using provided query as base) to get the entity, with all eager loaded edges.
-func (u *UpsertUserParams) Exec(ctx context.Context, id uuid.UUID, builder *ent.UserCreate, query *ent.UserQuery) (*ent.User, error) {
+func (u *UpsertUserParams) Exec(ctx context.Context, id uuid.UUID, builder *ent.UserCreate, query *ent.UserQuery, updater *ent.UserUpdateOne) (*ent.User, error) {
 	// Set the ID for the upsert operation
 	builder.SetID(id)
 
-	// Apply all inputs from the params
+	// Apply all inputs from the params (fields and M2O edges only; M2M handled separately)
 	builder = u.ApplyInputs(builder)
 
 	// Perform upsert with OnConflict - partial update mode (PATCH-like semantics via PUT)

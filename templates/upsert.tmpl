@@ -35,11 +35,11 @@ import (
     // Exec wraps all logic (mapping all provided values to the builder), upserts the entity
     // (creating it if it doesn't exist or updating it if it does), and does another query
     // (using provided query as base) to get the entity, with all eager loaded edges.
-    func (u *Upsert{{ $t.Name|zsingular }}Params) Exec(ctx context.Context, id {{ $t.ID.Type }}, builder *ent.{{ $t.Name }}Create, query *ent.{{ $t.Name }}Query) (*ent.{{ $t.Name }}, error) {
+    func (u *Upsert{{ $t.Name|zsingular }}Params) Exec(ctx context.Context, id {{ $t.ID.Type }}, builder *ent.{{ $t.Name }}Create, query *ent.{{ $t.Name }}Query, updater *ent.{{ $t.Name }}UpdateOne) (*ent.{{ $t.Name }}, error) {
         // Set the ID for the upsert operation
         builder.SetID(id)
 
-        // Apply all inputs from the params
+        // Apply all inputs from the params (fields and M2O edges only; M2M handled separately)
         builder = u.ApplyInputs(builder)
 
         // Perform upsert with OnConflict - partial update mode (PATCH-like semantics via PUT)
@@ -48,6 +48,33 @@ import (
         if err != nil {
             return nil, err
         }
+
+        {{- range $e := $t.Edges }}
+            {{- if or
+                (($e|getAnnotation).GetSkip $.Annotations.RestConfig)
+                $e.Annotations.Rest.ReadOnly
+                (not (($e|getAnnotation).HasOperation $.Annotations.RestConfig "upsert"))
+                (not $e.Type.ID)
+                $e.Unique
+                $e.Field
+            }}
+                {{- continue }}
+            {{- end }}
+        if u.{{ $e.StructField }} != nil {
+            // Field was explicitly provided in the request (could be empty array or have values)
+            // Always clear first to ensure replace semantics (not append)
+            edgeUpdater := updater.Clear{{ $e.StructField }}()
+            if len(u.{{ $e.StructField }}) > 0 {
+                // Add the new edge IDs
+                edgeUpdater = edgeUpdater.Add{{ $e.Name|zsingular|pascal }}IDs(u.{{ $e.StructField }}...)
+            }
+            // If empty array was provided, just clear (don't add anything)
+            err = edgeUpdater.Exec(ctx)
+            if err != nil {
+                return nil, err
+            }
+        }
+        {{- end }}
 
         // Fetch the entity with eager-loaded edges
         return EagerLoad{{ $t.Name|zsingular }}(query.Where({{ $t.Package }}.ID(id))).Only(ctx)

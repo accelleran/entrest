@@ -21,7 +21,6 @@ import (
 	"github.com/go-playground/form/v4"
 	uuid "github.com/google/uuid"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent"
-	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/category"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/friendship"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/pet"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/post"
@@ -595,12 +594,7 @@ func UseEntContext(db *ent.Client) func(next http.Handler) http.Handler {
 // Handler returns a ready-to-use http.Handler that mounts all of the necessary endpoints.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /categories", ReqParam(s, OperationList, s.ListCategories))
-	mux.HandleFunc("GET /categories/{id}", ReqID(s, OperationRead, s.GetCategory))
-	mux.HandleFunc("GET /categories/{id}/pets", ReqIDParam(s, OperationList, s.ListCategoryPets))
-	mux.HandleFunc("POST /categories", ReqParam(s, OperationCreate, s.CreateCategory))
-	mux.HandleFunc("PATCH /categories/{id}", ReqIDParam(s, OperationUpdate, s.UpdateCategory))
-	mux.HandleFunc("DELETE /categories/{id}", ReqID(s, OperationDelete, s.DeleteCategory))
+	mux.HandleFunc("PUT /categories/{id}", ReqIDParam(s, OperationUpsert, s.UpsertCategory))
 	mux.HandleFunc("GET /follows", ReqParam(s, OperationList, s.ListFollows))
 	mux.HandleFunc("POST /follows", ReqParam(s, OperationCreate, s.CreateFollow))
 	mux.HandleFunc("GET /friendships", ReqParam(s, OperationList, s.ListFriendships))
@@ -666,34 +660,9 @@ func (s *Server) Handler() http.Handler {
 	return http.StripPrefix(s.config.BasePath, UseEntContext(s.db)(mux))
 }
 
-// ListCategories maps to "GET /categories".
-func (s *Server) ListCategories(r *http.Request, p *ListCategoryParams) (*PagedResponse[ent.Category], error) {
-	return p.Exec(r.Context(), s.db.Category.Query())
-}
-
-// GetCategory maps to "GET /categories/{id}".
-func (s *Server) GetCategory(r *http.Request, categoryID int) (*ent.Category, error) {
-	return EagerLoadCategory(s.db.Category.Query().Where(category.ID(categoryID))).Only(r.Context())
-}
-
-// ListCategoryPets maps to "GET /categories/{id}/pets".
-func (s *Server) ListCategoryPets(r *http.Request, categoryID int, p *ListPetParams) (*PagedResponse[ent.Pet], error) {
-	return p.Exec(r.Context(), s.db.Category.Query().Where(category.ID(categoryID)).QueryPets())
-}
-
-// CreateCategory maps to "POST /categories".
-func (s *Server) CreateCategory(r *http.Request, p *CreateCategoryParams) (*ent.Category, error) {
-	return p.Exec(r.Context(), s.db.Category.Create(), s.db.Category.Query())
-}
-
-// UpdateCategory maps to "PATCH /categories/{id}".
-func (s *Server) UpdateCategory(r *http.Request, categoryID int, p *UpdateCategoryParams) (*ent.Category, error) {
-	return p.Exec(r.Context(), s.db.Category.UpdateOneID(categoryID), s.db.Category.Query())
-}
-
-// DeleteCategory maps to "DELETE /categories/{id}".
-func (s *Server) DeleteCategory(r *http.Request, categoryID int) (*struct{}, error) {
-	return nil, s.db.Category.DeleteOneID(categoryID).Exec(r.Context())
+// UpsertCategory maps to "PUT /categories/{id}".
+func (s *Server) UpsertCategory(r *http.Request, categoryID int, p *UpsertCategoryParams) (*ent.Category, error) {
+	return p.Exec(r.Context(), categoryID, s.db.Category.Create(), s.db.Category.Query(), s.db.Category.UpdateOneID(categoryID))
 }
 
 // ListFollows maps to "GET /follows".
@@ -783,7 +752,7 @@ func (s *Server) UpdatePet(r *http.Request, petID int, p *UpdatePetParams) (*ent
 
 // ReplacePet maps to "PUT /pets/{id}".
 func (s *Server) ReplacePet(r *http.Request, petID int, p *ReplacePetParams) (*ent.Pet, error) {
-	return p.Exec(r.Context(), petID, s.db.Pet.Create(), s.db.Pet.Query())
+	return p.Exec(r.Context(), petID, s.db.Pet.Create(), s.db.Pet.Query(), s.db.Pet.UpdateOneID(petID))
 }
 
 // DeletePet maps to "DELETE /pets/{id}".
@@ -888,7 +857,7 @@ func (s *Server) UpdateUser(r *http.Request, userID uuid.UUID, p *UpdateUserPara
 
 // UpsertUser maps to "PUT /users/{id}".
 func (s *Server) UpsertUser(r *http.Request, userID uuid.UUID, p *UpsertUserParams) (*ent.User, error) {
-	return p.Exec(r.Context(), userID, s.db.User.Create(), s.db.User.Query())
+	return p.Exec(r.Context(), userID, s.db.User.Create(), s.db.User.Query(), s.db.User.UpdateOneID(userID))
 }
 
 // DeleteUser maps to "DELETE /users/{id}".

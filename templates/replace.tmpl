@@ -35,7 +35,7 @@ import (
     // Exec wraps all logic (mapping all provided values to the builder), replaces the entity
     // (creating it if it doesn't exist or fully replacing it if it does), and does another query
     // (using provided query as base) to get the entity, with all eager loaded edges.
-    func (r *Replace{{ $t.Name|zsingular }}Params) Exec(ctx context.Context, id {{ $t.ID.Type }}, builder *ent.{{ $t.Name }}Create, query *ent.{{ $t.Name }}Query) (*ent.{{ $t.Name }}, error) {
+    func (r *Replace{{ $t.Name|zsingular }}Params) Exec(ctx context.Context, id {{ $t.ID.Type }}, builder *ent.{{ $t.Name }}Create, query *ent.{{ $t.Name }}Query, updater *ent.{{ $t.Name }}UpdateOne) (*ent.{{ $t.Name }}, error) {
         // Set the ID for the replace operation
         builder.SetID(id)
 
@@ -116,6 +116,30 @@ import (
         if err != nil {
             return nil, err
         }
+
+        {{- range $e := $t.Edges }}
+            {{- if or
+                (($e|getAnnotation).GetSkip $.Annotations.RestConfig)
+                $e.Annotations.Rest.ReadOnly
+                (not (($e|getAnnotation).HasOperation $.Annotations.RestConfig "replace"))
+                (not $e.Type.ID)
+                $e.Unique
+                $e.Field
+            }}
+                {{- continue }}
+            {{- end }}
+        // Always clear (Replace means full replacement - unprovided fields are cleared)
+        edgeUpdater := updater.Clear{{ $e.StructField }}()
+        if len(r.{{ $e.StructField }}) > 0 {
+            // Add the new edge IDs if provided
+            edgeUpdater = edgeUpdater.Add{{ $e.Name|zsingular|pascal }}IDs(r.{{ $e.StructField }}...)
+        }
+        // If empty array or omitted, just clear (don't add anything)
+        err = edgeUpdater.Exec(ctx)
+        if err != nil {
+            return nil, err
+        }
+        {{- end }}
 
         // Fetch the entity with eager-loaded edges
         return EagerLoad{{ $t.Name|zsingular }}(query.Where({{ $t.Package }}.ID(id))).Only(ctx)

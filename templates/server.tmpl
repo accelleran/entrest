@@ -371,7 +371,7 @@ func UseEntContext(db *ent.Client) func(next http.Handler) http.Handler {
         {{- $opID := getOperationIDName "upsert" $t nil | zpascal }}
         // {{ $opID }} maps to "PUT {{ getPathName "upsert" $t nil false }}".
         func (s *Server) {{ $opID }}(r *http.Request, {{ $id }} {{ $t.ID.Type }}, p *Upsert{{ $t.Name|zsingular }}Params) (*ent.{{ $t.Name }}, error) {
-            return p.Exec(r.Context(), {{ $id }}, s.db.{{ $t.Name }}.Create(), s.db.{{ $t.Name }}.Query())
+            return p.Exec(r.Context(), {{ $id }}, s.db.{{ $t.Name }}.Create(), s.db.{{ $t.Name }}.Query(), s.db.{{ $t.Name }}.UpdateOneID({{ $id }}))
         }
     {{- end }}
 
@@ -380,7 +380,7 @@ func UseEntContext(db *ent.Client) func(next http.Handler) http.Handler {
         {{- $opID := getOperationIDName "replace" $t nil | zpascal }}
         // {{ $opID }} maps to "PUT {{ getPathName "replace" $t nil false }}".
         func (s *Server) {{ $opID }}(r *http.Request, {{ $id }} {{ $t.ID.Type }}, p *Replace{{ $t.Name|zsingular }}Params) (*ent.{{ $t.Name }}, error) {
-            return p.Exec(r.Context(), {{ $id }}, s.db.{{ $t.Name }}.Create(), s.db.{{ $t.Name }}.Query())
+            return p.Exec(r.Context(), {{ $id }}, s.db.{{ $t.Name }}.Create(), s.db.{{ $t.Name }}.Query(), s.db.{{ $t.Name }}.UpdateOneID({{ $id }}))
         }
     {{- end }}
 

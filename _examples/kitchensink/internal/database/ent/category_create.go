@@ -63,6 +63,14 @@ func (_c *CategoryCreate) SetReadonly(v string) *CategoryCreate {
 	return _c
 }
 
+// SetNillableReadonly sets the "readonly" field if the given value is not nil.
+func (_c *CategoryCreate) SetNillableReadonly(v *string) *CategoryCreate {
+	if v != nil {
+		_c.SetReadonly(*v)
+	}
+	return _c
+}
+
 // SetSkipInSpec sets the "skip_in_spec" field.
 func (_c *CategoryCreate) SetSkipInSpec(v string) *CategoryCreate {
 	_c.mutation.SetSkipInSpec(v)
@@ -100,6 +108,12 @@ func (_c *CategoryCreate) SetStrings(v []string) *CategoryCreate {
 // SetInts sets the "ints" field.
 func (_c *CategoryCreate) SetInts(v []int) *CategoryCreate {
 	_c.mutation.SetInts(v)
+	return _c
+}
+
+// SetID sets the "id" field.
+func (_c *CategoryCreate) SetID(v int) *CategoryCreate {
+	_c.mutation.SetID(v)
 	return _c
 }
 
@@ -161,6 +175,10 @@ func (_c *CategoryCreate) defaults() {
 		v := category.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Readonly(); !ok {
+		v := category.DefaultReadonly
+		_c.mutation.SetReadonly(v)
+	}
 	if _, ok := _c.mutation.Nillable(); !ok {
 		v := category.DefaultNillable
 		_c.mutation.SetNillable(v)
@@ -198,8 +216,10 @@ func (_c *CategoryCreate) sqlSave(ctx context.Context) (*Category, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != _node.ID {
+		id := _spec.ID.Value.(int64)
+		_node.ID = int(id)
+	}
 	_c.mutation.id = &_node.ID
 	_c.mutation.done = true
 	return _node, nil
@@ -211,6 +231,10 @@ func (_c *CategoryCreate) createSpec() (*Category, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(category.Table, sqlgraph.NewFieldSpec(category.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = id
+	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(category.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -413,17 +437,23 @@ func (u *CategoryUpsert) ClearInts() *CategoryUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.Category.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(category.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *CategoryUpsertOne) UpdateNewValues() *CategoryUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(category.FieldID)
+		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(category.FieldCreatedAt)
 		}
@@ -657,7 +687,7 @@ func (_c *CategoryCreateBulk) Save(ctx context.Context) ([]*Category, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
+				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
 					id := specs[i].ID.Value.(int64)
 					nodes[i].ID = int(id)
 				}
@@ -747,12 +777,18 @@ type CategoryUpsertBulk struct {
 //	client.Category.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(category.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *CategoryUpsertBulk) UpdateNewValues() *CategoryUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(category.FieldID)
+			}
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(category.FieldCreatedAt)
 			}

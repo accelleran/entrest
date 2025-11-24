@@ -5,300 +5,21 @@
         "version": "1.0.0"
     },
     "paths": {
-        "/categories": {
-            "summary": "List categories",
-            "description": "List Category entities (including pagination, filtering, sorting, etc). If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
-            "get": {
-                "tags": [
-                    "Categories"
-                ],
-                "summary": "List categories",
-                "description": "List Category entities (including pagination, filtering, sorting, etc). If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
-                "operationId": "listCategories",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/Page"
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "The number of entities to retrieve per page.",
-                        "schema": {
-                            "type": "integer",
-                            "maximum": 100,
-                            "minimum": 1,
-                            "default": 10
-                        }
-                    },
-                    {
-                        "name": "sort",
-                        "in": "query",
-                        "description": "Sort entity results by the given field.",
-                        "schema": {
-                            "$ref": "#/components/schemas/CategorySortableFields",
-                            "default": "id"
-                        }
-                    },
-                    {
-                        "name": "order",
-                        "in": "query",
-                        "description": "Order the results in ascending or descending order.",
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "asc",
-                                "desc"
-                            ],
-                            "default": "asc"
-                        }
-                    },
-                    {
-                        "$ref": "#/components/parameters/FilterOperation"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryIDEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryIDNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryIDIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryIDNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryCreatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryCreatedAtLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryUpdatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CategoryUpdatedAtLT"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The requested Categories.",
-                        "headers": {
-                            "X-Ratelimit-Limit": {
-                                "$ref": "#/components/headers/X-Ratelimit-Limit"
-                            },
-                            "X-Ratelimit-Remaining": {
-                                "$ref": "#/components/headers/X-Ratelimit-Remaining"
-                            },
-                            "X-Ratelimit-Reset": {
-                                "$ref": "#/components/headers/X-Ratelimit-Reset"
-                            }
-                        },
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CategoryList"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/ErrorBadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/ErrorUnauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/ErrorForbidden"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ErrorNotFound"
-                    },
-                    "429": {
-                        "$ref": "#/components/responses/ErrorTooManyRequests"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/ErrorInternalServerError"
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "Categories"
-                ],
-                "summary": "Create a new category",
-                "description": "Create a new Category entity. If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
-                "operationId": "createCategory",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/CategoryCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "201": {
-                        "description": "The created Category entity.",
-                        "headers": {
-                            "X-Ratelimit-Limit": {
-                                "$ref": "#/components/headers/X-Ratelimit-Limit"
-                            },
-                            "X-Ratelimit-Remaining": {
-                                "$ref": "#/components/headers/X-Ratelimit-Remaining"
-                            },
-                            "X-Ratelimit-Reset": {
-                                "$ref": "#/components/headers/X-Ratelimit-Reset"
-                            }
-                        },
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CategoryRead"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/ErrorBadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/ErrorUnauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/ErrorForbidden"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ErrorNotFound"
-                    },
-                    "409": {
-                        "$ref": "#/components/responses/ErrorConflict"
-                    },
-                    "429": {
-                        "$ref": "#/components/responses/ErrorTooManyRequests"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/ErrorInternalServerError"
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "$ref": "#/components/parameters/PrettyResponse"
-                },
-                {
-                    "$ref": "#/components/parameters/X-Request-Id"
-                }
-            ]
-        },
         "/categories/{categoryID}": {
             "summary": "Operate on a single Category entity",
             "description": "Operate on a single Category entity by its ID.",
-            "get": {
+            "put": {
                 "tags": [
                     "Categories"
                 ],
-                "summary": "Retrieve a category",
-                "description": "Retrieve a single Category entity by its ID. If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
-                "operationId": "getCategory",
-                "responses": {
-                    "200": {
-                        "description": "The requested Category entity.",
-                        "headers": {
-                            "X-Ratelimit-Limit": {
-                                "$ref": "#/components/headers/X-Ratelimit-Limit"
-                            },
-                            "X-Ratelimit-Remaining": {
-                                "$ref": "#/components/headers/X-Ratelimit-Remaining"
-                            },
-                            "X-Ratelimit-Reset": {
-                                "$ref": "#/components/headers/X-Ratelimit-Reset"
-                            }
-                        },
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CategoryRead"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/ErrorBadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/ErrorUnauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/ErrorForbidden"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ErrorNotFound"
-                    },
-                    "429": {
-                        "$ref": "#/components/responses/ErrorTooManyRequests"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/ErrorInternalServerError"
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "Categories"
-                ],
-                "summary": "Delete a category",
-                "description": "Delete a single Category entity by its ID.",
-                "operationId": "deleteCategory",
-                "responses": {
-                    "204": {
-                        "description": "The requested Category entity.",
-                        "headers": {
-                            "X-Ratelimit-Limit": {
-                                "$ref": "#/components/headers/X-Ratelimit-Limit"
-                            },
-                            "X-Ratelimit-Remaining": {
-                                "$ref": "#/components/headers/X-Ratelimit-Remaining"
-                            },
-                            "X-Ratelimit-Reset": {
-                                "$ref": "#/components/headers/X-Ratelimit-Reset"
-                            }
-                        }
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/ErrorBadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/ErrorUnauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/ErrorForbidden"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ErrorNotFound"
-                    },
-                    "429": {
-                        "$ref": "#/components/responses/ErrorTooManyRequests"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/ErrorInternalServerError"
-                    }
-                }
-            },
-            "patch": {
-                "tags": [
-                    "Categories"
-                ],
-                "summary": "Update a category",
-                "description": "Update an existing Category entity. If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
-                "operationId": "updateCategory",
+                "summary": "Upsert a category",
+                "description": "Create a new Category entity, or partially update an existing one if it already exists (unprovided optional fields are preserved). If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
+                "operationId": "upsertCategory",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/CategoryUpdate"
+                                "$ref": "#/components/schemas/CategoryUpsert"
                             }
                         }
                     },
@@ -306,7 +27,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "The update Category entity.",
+                        "description": "The upserted Category entity.",
                         "headers": {
                             "X-Ratelimit-Limit": {
                                 "$ref": "#/components/headers/X-Ratelimit-Limit"
@@ -340,523 +61,6 @@
                     },
                     "409": {
                         "$ref": "#/components/responses/ErrorConflict"
-                    },
-                    "429": {
-                        "$ref": "#/components/responses/ErrorTooManyRequests"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/ErrorInternalServerError"
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "$ref": "#/components/parameters/PrettyResponse"
-                },
-                {
-                    "$ref": "#/components/parameters/CategoryID"
-                },
-                {
-                    "$ref": "#/components/parameters/X-Request-Id"
-                }
-            ]
-        },
-        "/categories/{categoryID}/pets": {
-            "summary": "List a categories associated pets",
-            "description": "List a categories associated pets (Pet entity type). If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
-            "get": {
-                "tags": [
-                    "Categories",
-                    "Pets"
-                ],
-                "summary": "List a categories associated pets",
-                "description": "List a categories associated pets (Pet entity type). If the entity has eager-loaded edges, the depth of when those will be loaded is limited to a depth of 1 (entity -\u003e edge, not entity -\u003e edge -\u003e edge -\u003e etc).",
-                "operationId": "listCategoryPets",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/Page"
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "The number of entities to retrieve per page.",
-                        "schema": {
-                            "type": "integer",
-                            "maximum": 100,
-                            "minimum": 1,
-                            "default": 10
-                        }
-                    },
-                    {
-                        "name": "sort",
-                        "in": "query",
-                        "description": "Sort entity results by the given field.",
-                        "schema": {
-                            "$ref": "#/components/schemas/PetSortableFields",
-                            "default": "name"
-                        }
-                    },
-                    {
-                        "name": "order",
-                        "in": "query",
-                        "description": "Order the results in ascending or descending order.",
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "asc",
-                                "desc"
-                            ],
-                            "default": "asc"
-                        }
-                    },
-                    {
-                        "$ref": "#/components/parameters/FilterOperation"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetIDEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetIDNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetIDIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetIDNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameEqualFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameHasPrefix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNameHasSuffix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetNicknamesIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetAgeEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetAgeNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetAgeGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetAgeLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetAgeIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetAgeNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetTypeEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetTypeNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetTypeIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/PetTypeNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeHasCategory"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryIDEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryIDNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryIDIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryIDNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryCreatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryCreatedAtLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryUpdatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeCategoryUpdatedAtLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeHasOwner"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerIDEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerIDNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerIDIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerIDNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerCreatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerCreatedAtLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerUpdatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerUpdatedAtLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameEqualFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameHasPrefix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerNameHasSuffix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerTypeEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerTypeNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerTypeIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerTypeNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerDescriptionIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerDescriptionContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerDescriptionContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEnabledEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailEqualFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailHasPrefix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerEmailHasSuffix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerLastAuthenticatedAtEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerLastAuthenticatedAtNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeOwnerLastAuthenticatedAtIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeHasFriend"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendIDEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendIDNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendIDIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendIDNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameEqualFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameHasPrefix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNameHasSuffix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendNicknamesIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendAgeEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendAgeNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendAgeGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendAgeLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendAgeIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendAgeNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendTypeEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendTypeNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendTypeIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFriendTypeNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeHasFollowedBy"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByIDEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByIDNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByIDIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByIDNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByCreatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByCreatedAtLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByUpdatedAtGT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByUpdatedAtLT"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameEqualFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameHasPrefix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByNameHasSuffix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByTypeEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByTypeNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByTypeIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByTypeNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByDescriptionIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByDescriptionContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByDescriptionContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEnabledEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailNotIn"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailEqualFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailContains"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailContainsFold"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailHasPrefix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByEmailHasSuffix"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByLastAuthenticatedAtEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByLastAuthenticatedAtNEQ"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeFollowedByLastAuthenticatedAtIsNil"
-                    },
-                    {
-                        "$ref": "#/components/parameters/EdgeHasFollowing"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The requested pets.",
-                        "headers": {
-                            "X-Ratelimit-Limit": {
-                                "$ref": "#/components/headers/X-Ratelimit-Limit"
-                            },
-                            "X-Ratelimit-Remaining": {
-                                "$ref": "#/components/headers/X-Ratelimit-Remaining"
-                            },
-                            "X-Ratelimit-Reset": {
-                                "$ref": "#/components/headers/X-Ratelimit-Reset"
-                            }
-                        },
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PetList"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/ErrorBadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/ErrorUnauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/ErrorForbidden"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ErrorNotFound"
                     },
                     "429": {
                         "$ref": "#/components/responses/ErrorTooManyRequests"
@@ -8329,7 +7533,8 @@
                         "type": "string"
                     },
                     "readonly": {
-                        "type": "string"
+                        "type": "string",
+                        "default": "system-default"
                     },
                     "nillable": {
                         "type": "string",
@@ -8358,7 +7563,31 @@
                     "nillable"
                 ]
             },
-            "CategoryCreate": {
+            "CategoryRead": {
+                "$ref": "#/components/schemas/Category"
+            },
+            "CategorySortableFields": {
+                "description": "All potential sortable fields for Category entities.",
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "id",
+                    "pets.age.sum",
+                    "pets.count",
+                    "random",
+                    "updated_at"
+                ],
+                "default": "id"
+            },
+            "CategoryStringsEnum": {
+                "type": "string",
+                "enum": [
+                    "FOO",
+                    "BAR",
+                    "BAZ"
+                ]
+            },
+            "CategoryUpsert": {
                 "description": "A single Category entity and the fields that can be created/updated.",
                 "type": "object",
                 "properties": {
@@ -8392,90 +7621,6 @@
                 "required": [
                     "name"
                 ]
-            },
-            "CategoryList": {
-                "description": "A paginated result set of Category entities. Includes eager-loaded edges (if any) for each entity.",
-                "allOf": [
-                    {
-                        "$ref": "#/components/schemas/PagedResponse"
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "content": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/components/schemas/CategoryRead"
-                                }
-                            }
-                        },
-                        "required": [
-                            "content"
-                        ]
-                    }
-                ]
-            },
-            "CategoryRead": {
-                "$ref": "#/components/schemas/Category"
-            },
-            "CategorySortableFields": {
-                "description": "All potential sortable fields for Category entities.",
-                "type": "string",
-                "enum": [
-                    "created_at",
-                    "id",
-                    "pets.age.sum",
-                    "pets.count",
-                    "random",
-                    "updated_at"
-                ],
-                "default": "id"
-            },
-            "CategoryStringsEnum": {
-                "type": "string",
-                "enum": [
-                    "FOO",
-                    "BAR",
-                    "BAZ"
-                ]
-            },
-            "CategoryUpdate": {
-                "description": "A single Category entity and the fields that can be created/updated.",
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "nillable": {
-                        "type": "string",
-                        "nullable": true,
-                        "default": "test"
-                    },
-                    "strings": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/CategoryStringsEnum"
-                        }
-                    },
-                    "ints": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        }
-                    },
-                    "add_pets": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        }
-                    },
-                    "remove_pets": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        }
-                    }
-                }
             },
             "ErrorBadRequest": {
                 "type": "object",
@@ -13689,9 +12834,6 @@
             "name": "Categories"
         },
         {
-            "name": "Pets"
-        },
-        {
             "name": "Follows"
         },
         {
@@ -13699,6 +12841,9 @@
         },
         {
             "name": "Users"
+        },
+        {
+            "name": "Pets"
         },
         {
             "name": "Posts"

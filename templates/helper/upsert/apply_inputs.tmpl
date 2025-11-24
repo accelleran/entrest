@@ -53,7 +53,12 @@
             {{- end }}
         {{- else }}
             {{- if not $e.Unique }}
-                builder.Add{{ $e.Name|zsingular|pascal }}IDs({{ $receiver }}.{{ $e.StructField }}...)
+                {{- if or (eq $operation "upsert") (eq $operation "replace") }}
+                    {{- /* Non-unique edges are handled separately in Exec to ensure replace semantics */ -}}
+                    {{- /* Using Add here would cause append behavior on existing entities */ -}}
+                {{- else }}
+                    builder.Add{{ $e.Name|zsingular|pascal }}IDs({{ $receiver }}.{{ $e.StructField }}...)
+                {{- end }}
             {{- else if $e.Optional }}
                 if {{ $receiver }}.{{ $e.StructField }} != nil {
                     builder.Set{{ $e.StructField }}ID(*{{ $receiver }}.{{ $e.StructField }})

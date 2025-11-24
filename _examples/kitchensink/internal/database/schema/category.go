@@ -29,9 +29,11 @@ type Category struct {
 
 func (Category) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name"),
-		field.String("readonly").
-			Annotations(entrest.WithReadOnly(true)),
+	field.Int("id"),  // Explicitly define ID to enable SetID() for upsert
+	field.String("name"),
+	field.String("readonly").
+		Default("system-default").
+		Annotations(entrest.WithReadOnly(true)),
 		field.String("skip_in_spec").
 			Optional().
 			Annotations(entrest.WithSkip(true)),
@@ -54,10 +56,15 @@ func (Category) Mixin() []ent.Mixin {
 
 func (Category) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("pets", Pet.Type),
+		edge.To("pets", Pet.Type).
+			Annotations(
+				entrest.WithIncludeOperations(entrest.OperationUpsert),
+			),
 	}
 }
 
 func (Category) Annotations() []schema.Annotation {
-	return []schema.Annotation{}
+	return []schema.Annotation{
+		entrest.WithIncludeOperations(entrest.OperationUpsert),
+	}
 }

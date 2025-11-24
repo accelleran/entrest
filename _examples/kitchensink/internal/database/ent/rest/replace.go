@@ -37,7 +37,7 @@ func (r *ReplacePetParams) ApplyInputs(builder *ent.PetCreate) *ent.PetCreate {
 // Exec wraps all logic (mapping all provided values to the builder), replaces the entity
 // (creating it if it doesn't exist or fully replacing it if it does), and does another query
 // (using provided query as base) to get the entity, with all eager loaded edges.
-func (r *ReplacePetParams) Exec(ctx context.Context, id int, builder *ent.PetCreate, query *ent.PetQuery) (*ent.Pet, error) {
+func (r *ReplacePetParams) Exec(ctx context.Context, id int, builder *ent.PetCreate, query *ent.PetQuery, updater *ent.PetUpdateOne) (*ent.Pet, error) {
 	// Set the ID for the replace operation
 	builder.SetID(id)
 
