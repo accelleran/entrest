@@ -108,8 +108,8 @@ import (
                         {{- end }}
                     {{- end }}
                 {{- else }}
-                    {{- /* edge.From without explicit backing field - skip as Ent doesn't generate setter methods for these in PostUpsert */ -}}
-            // Edge {{ $e.StructField }} is edge.From without backing field, skipped (Ent doesn't generate setters for these)
+                    {{- /* Edges without backing fields can't be set in Update callback (Ent doesn't generate setters in Upsert type) */ -}}
+                    {{- /* Non-unique edges without backing fields are handled separately after the main upsert (see below) */ -}}
                 {{- end }}
             {{- end }}
         }).Exec(ctx)
