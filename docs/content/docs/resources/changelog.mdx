@@ -19,6 +19,17 @@ Example: `v1.0.0+upstream.1.0.1` means fork version 1.0.0 based on upstream vers
 
 ## [Unreleased]
 
+## [v1.1.1+upstream.1.0.2] - 2025-11-24
+
+Based on upstream [entrest v1.0.2](https://github.com/lrstanley/entrest/releases/tag/v1.0.2).
+
+### Fixed
+- **Edges without backing fields now included in Upsert/Replace params** - Edges marked with `WithIncludeOperations(OperationUpsert)` or `WithIncludeOperations(OperationCreateOrReplace)` are now properly included in the generated parameter structs, even when they don't have explicit backing fields defined with `.Field()`. Previously, these edges were silently excluded, making it impossible to set required edges during upsert/replace operations.
+- **Non-unique edges now replace instead of append in Upsert/Replace** - M2M and O2M relationships now correctly replace existing edge connections instead of appending to them, matching proper PUT semantics:
+  - **Upsert (partial update)**: `{"pets": [3, 4]}` replaces with [3, 4], `{"pets": []}` clears all, omitting `pets` preserves existing
+  - **Replace (full replacement)**: `{"pets": [3, 4]}` replaces with [3, 4], `{"pets": []}` or omitted clears all
+  - Previously, providing edge IDs would append to existing relationships (e.g., `[1, 2]` + `[3, 4]` = `[1, 2, 3, 4]`), which violated REST PUT semantics
+
 ## [v1.1.0+upstream.1.0.2] - 2025-11-13
 
 Based on upstream [entrest v1.0.2](https://github.com/lrstanley/entrest/releases/tag/v1.0.2).
