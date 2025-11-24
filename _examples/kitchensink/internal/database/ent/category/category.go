@@ -77,6 +77,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultReadonly holds the default value on creation for the "readonly" field.
+	DefaultReadonly string
 	// DefaultNillable holds the default value on creation for the "nillable" field.
 	DefaultNillable string
 )

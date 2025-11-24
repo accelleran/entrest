@@ -14,7 +14,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
-		{Name: "readonly", Type: field.TypeString},
+		{Name: "readonly", Type: field.TypeString, Default: "system-default"},
 		{Name: "skip_in_spec", Type: field.TypeString, Nullable: true},
 		{Name: "nillable", Type: field.TypeString, Default: "test"},
 		{Name: "strings", Type: field.TypeJSON, Nullable: true},

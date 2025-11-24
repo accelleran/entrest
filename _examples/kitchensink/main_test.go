@@ -15,6 +15,7 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent"
+	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/category"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/enttest"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/migrate"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/pet"
@@ -648,6 +649,105 @@ func TestHandler_Replace(t *testing.T) {
 	// Verify there's only one pet in the database with this ID
 	count := db.Pet.Query().Where(pet.ID(petID)).CountX(ctx)
 	assert.Equal(t, 1, count)
+}
+
+func TestHandler_Upsert_NonUniqueEdges(t *testing.T) {
+	ctx, db, s := newRestServer(t, nil)
+	t.Cleanup(func() { db.Close() })
+
+	// Create pets for testing
+	pet1 := db.Pet.Create().SetName("Pet1").SetAge(1).SetType(pet.TypeDog).SaveX(ctx)
+	pet2 := db.Pet.Create().SetName("Pet2").SetAge(2).SetType(pet.TypeCat).SaveX(ctx)
+	pet3 := db.Pet.Create().SetName("Pet3").SetAge(3).SetType(pet.TypeDog).SaveX(ctx)
+
+	categoryID := 12345
+
+	t.Run("create_with_edges", func(t *testing.T) {
+		// First upsert - create a new category with pets
+		data := map[string]any{
+			"name": "Test Category",
+			"pets": []int{pet1.ID, pet2.ID},
+		}
+
+		resp := enttest.Request[ent.Category](ctx, s, http.MethodPut, "/categories/"+fmt.Sprintf("%d", categoryID), data).Must(t)
+
+		assert.Equal(t, http.StatusOK, resp.Data.Code)
+		assert.Equal(t, categoryID, resp.Value.ID)
+		assert.Equal(t, "Test Category", resp.Value.Name)
+
+		// Verify pets in database
+		dbCategory := db.Category.Query().Where(category.ID(categoryID)).WithPets().OnlyX(ctx)
+		assert.Len(t, dbCategory.Edges.Pets, 2)
+		petIDs := []int{dbCategory.Edges.Pets[0].ID, dbCategory.Edges.Pets[1].ID}
+		assert.Contains(t, petIDs, pet1.ID)
+		assert.Contains(t, petIDs, pet2.ID)
+	})
+
+	t.Run("upsert_replaces_edges", func(t *testing.T) {
+		// Second upsert - replace pets (should not append)
+		// Initial state: pets = [pet1, pet2]
+		// Request: pets = [pet3]
+		// Expected: pets = [pet3] (not [pet1, pet2, pet3])
+		data := map[string]any{
+			"name": "Updated Category",
+			"pets": []int{pet3.ID},
+		}
+
+		resp := enttest.Request[ent.Category](ctx, s, http.MethodPut, "/categories/"+fmt.Sprintf("%d", categoryID), data).Must(t)
+
+		assert.Equal(t, http.StatusOK, resp.Data.Code)
+		assert.Equal(t, "Updated Category", resp.Value.Name)
+
+		// Verify pets were REPLACED, not appended
+		dbCategory := db.Category.Query().Where(category.ID(categoryID)).WithPets().OnlyX(ctx)
+		assert.Len(t, dbCategory.Edges.Pets, 1, "Should have exactly 1 pet (replaced, not appended)")
+		assert.Equal(t, pet3.ID, dbCategory.Edges.Pets[0].ID)
+	})
+
+	t.Run("upsert_clears_with_empty_array", func(t *testing.T) {
+		// Third upsert - clear all pets with empty array
+		// Current state: pets = [pet3]
+		// Request: pets = []
+		// Expected: pets = [] (cleared)
+		data := map[string]any{
+			"name": "Category with no pets",
+			"pets": []int{},
+		}
+
+		resp := enttest.Request[ent.Category](ctx, s, http.MethodPut, "/categories/"+fmt.Sprintf("%d", categoryID), data).Must(t)
+
+		assert.Equal(t, http.StatusOK, resp.Data.Code)
+
+		// Verify pets were cleared
+		dbCategory := db.Category.Query().Where(category.ID(categoryID)).WithPets().OnlyX(ctx)
+		assert.Len(t, dbCategory.Edges.Pets, 0, "Should have no pets after empty array")
+	})
+
+	t.Run("upsert_preserves_when_omitted", func(t *testing.T) {
+		// Fourth upsert - add pets back, then upsert without pets field
+		// Make sure category exists first with pets
+		db.Category.UpdateOneID(categoryID).AddPetIDs(pet1.ID, pet2.ID).SaveX(ctx)
+
+		// Current state: pets = [pet1, pet2]
+		// Request: pets omitted (not provided in JSON)
+		// Expected: pets = [pet1, pet2] (preserved)
+		data := map[string]any{
+			"name": "Category name changed",
+			// pets intentionally omitted
+		}
+
+		resp := enttest.Request[ent.Category](ctx, s, http.MethodPut, "/categories/"+fmt.Sprintf("%d", categoryID), data).Must(t)
+
+		assert.Equal(t, http.StatusOK, resp.Data.Code)
+		assert.Equal(t, "Category name changed", resp.Value.Name)
+
+		// Verify pets were PRESERVED (not cleared)
+		dbCategory := db.Category.Query().Where(category.ID(categoryID)).WithPets().OnlyX(ctx)
+		assert.Len(t, dbCategory.Edges.Pets, 2, "Should preserve pets when field is omitted")
+		petIDs := []int{dbCategory.Edges.Pets[0].ID, dbCategory.Edges.Pets[1].ID}
+		assert.Contains(t, petIDs, pet1.ID)
+		assert.Contains(t, petIDs, pet2.ID)
+	})
 }
 
 func TestHandler_SortRandom(t *testing.T) {
