@@ -19,6 +19,9 @@ Example: `v1.0.0+upstream.1.0.1` means fork version 1.0.0 based on upstream vers
 
 ## [Unreleased]
 
+### Fixed
+- **JSON tag handling preserves existing options** - The internal `patchJSONTag` function now properly removes only the `omitempty` option from JSON tags while preserving other tag options and metadata, rather than replacing the entire struct tag
+
 ## [v1.1.1+upstream.1.0.2] - 2025-11-24
 
 Based on upstream [entrest v1.0.2](https://github.com/lrstanley/entrest/releases/tag/v1.0.2).

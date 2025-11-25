@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"entgo.io/ent/entc/gen"
+	"github.com/fatih/structtag"
 )
 
 // ptr returns a pointer to the given value. Should only be used for primitives.
@@ -177,7 +178,12 @@ func patchJSONTag(g *gen.Graph) error {
 			if field.StructTag == `json:"-"` {
 				continue
 			}
-			field.StructTag = fmt.Sprintf("json:%q", field.Name)
+			tags, err := structtag.Parse(field.StructTag)
+			if err != nil {
+				return fmt.Errorf("failed to parse struct tag for field %q: %w", field.Name, err)
+			}
+			tags.DeleteOptions("json", "omitempty")
+			field.StructTag = tags.String()
 		}
 	}
 	return nil

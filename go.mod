@@ -6,6 +6,7 @@ toolchain go1.24.4
 
 require (
 	entgo.io/ent v0.14.5
+	github.com/fatih/structtag v1.2.0
 	github.com/go-openapi/inflect v0.21.3
 	github.com/ogen-go/ogen v1.14.0
 	github.com/stoewer/go-strcase v1.3.1
