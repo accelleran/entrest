@@ -53,7 +53,7 @@ import (
             {{- if or
                 (($e|getAnnotation).GetSkip $.Annotations.RestConfig)
                 $e.Annotations.Rest.ReadOnly
-                (not (($e|getAnnotation).HasOperation $.Annotations.RestConfig "upsert"))
+                (not (edgeHasOperation $e $t $.Annotations.RestConfig "upsert"))
                 (not $e.Type.ID)
                 $e.Unique
                 $e.Field

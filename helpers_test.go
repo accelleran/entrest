@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"entgo.io/ent/entc/gen"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -284,4 +285,97 @@ func TestMapKeys(t *testing.T) {
 			assert.Equal(t, tt.out, mapKeys(tt.m))
 		})
 	}
+}
+
+func TestEdgeHasOperation(t *testing.T) {
+	t.Parallel()
+
+	config := &Config{
+		DefaultOperations: DefaultOperations, // Create, Read, Update, Delete, List
+	}
+
+	t.Run("edge-with-no-annotation-uses-defaults", func(t *testing.T) {
+		t.Parallel()
+		edge := &gen.Edge{Name: "test"}
+		parentType := &gen.Type{Name: "Parent"}
+
+		// Create is in defaults, Upsert is not
+		assert.True(t, EdgeHasOperation(edge, parentType, config, OperationCreate))
+		assert.False(t, EdgeHasOperation(edge, parentType, config, OperationUpsert))
+	})
+
+	t.Run("edge-inherits-from-parent-when-no-edge-annotation", func(t *testing.T) {
+		t.Parallel()
+		edge := &gen.Edge{Name: "test"}
+		parentType := &gen.Type{
+			Name: "Parent",
+			Annotations: gen.Annotations{
+				Annotation{}.Name(): WithIncludeOperations(OperationCreate, OperationUpsert),
+			},
+		}
+
+		// Both Create and Upsert should be available via inheritance from parent
+		assert.True(t, EdgeHasOperation(edge, parentType, config, OperationCreate))
+		assert.True(t, EdgeHasOperation(edge, parentType, config, OperationUpsert))
+		// Delete is not in parent's operations
+		assert.False(t, EdgeHasOperation(edge, parentType, config, OperationDelete))
+	})
+
+	t.Run("edge-explicit-operations-override-parent", func(t *testing.T) {
+		t.Parallel()
+		edge := &gen.Edge{
+			Name: "test",
+			Annotations: gen.Annotations{
+				Annotation{}.Name(): WithIncludeOperations(OperationCreate),
+			},
+		}
+		parentType := &gen.Type{
+			Name: "Parent",
+			Annotations: gen.Annotations{
+				Annotation{}.Name(): WithIncludeOperations(OperationCreate, OperationUpsert),
+			},
+		}
+
+		// Edge has explicit Create, so only Create is available
+		assert.True(t, EdgeHasOperation(edge, parentType, config, OperationCreate))
+		// Upsert is in parent but NOT in edge's explicit list
+		assert.False(t, EdgeHasOperation(edge, parentType, config, OperationUpsert))
+	})
+
+	t.Run("edge-exclusion-overrides-inheritance", func(t *testing.T) {
+		t.Parallel()
+		edge := &gen.Edge{
+			Name: "test",
+			Annotations: gen.Annotations{
+				Annotation{}.Name(): WithExcludeOperations(OperationUpsert),
+			},
+		}
+		parentType := &gen.Type{
+			Name: "Parent",
+			Annotations: gen.Annotations{
+				Annotation{}.Name(): WithIncludeOperations(OperationCreate, OperationUpsert),
+			},
+		}
+
+		// Create should be available via parent inheritance
+		assert.True(t, EdgeHasOperation(edge, parentType, config, OperationCreate))
+		// Upsert is excluded on edge
+		assert.False(t, EdgeHasOperation(edge, parentType, config, OperationUpsert))
+	})
+
+	t.Run("edge-exclusion-on-defaults", func(t *testing.T) {
+		t.Parallel()
+		edge := &gen.Edge{
+			Name: "test",
+			Annotations: gen.Annotations{
+				Annotation{}.Name(): WithExcludeOperations(OperationCreate),
+			},
+		}
+		parentType := &gen.Type{Name: "Parent"}
+
+		// Create is excluded even though it's in defaults
+		assert.False(t, EdgeHasOperation(edge, parentType, config, OperationCreate))
+		// Read should still be available from defaults
+		assert.True(t, EdgeHasOperation(edge, parentType, config, OperationRead))
+	})
 }

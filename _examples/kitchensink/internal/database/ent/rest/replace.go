@@ -5,6 +5,7 @@ package rest
 import (
 	"context"
 
+	uuid "github.com/google/uuid"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent"
 	"github.com/lrstanley/entrest/_examples/kitchensink/internal/database/ent/pet"
 )
@@ -19,6 +20,14 @@ type ReplacePetParams struct {
 	Description *string  `json:"description,omitempty"`
 	Age         int      `json:"age"`
 	Type        pet.Type `json:"type"`
+	// Categories that the pet belongs to.
+	Categories []int `json:"categories,omitempty"`
+	// The user that owns the pet.
+	Owner *uuid.UUID `json:"owner,omitempty"`
+	// Pets that this pet is friends with.
+	Friends []int `json:"friends,omitempty"`
+	// Users that this pet is followed by.
+	FollowedBy []uuid.UUID `json:"followed_by,omitempty"`
 }
 
 func (r *ReplacePetParams) ApplyInputs(builder *ent.PetCreate) *ent.PetCreate {
@@ -31,6 +40,9 @@ func (r *ReplacePetParams) ApplyInputs(builder *ent.PetCreate) *ent.PetCreate {
 	}
 	builder.SetAge(r.Age)
 	builder.SetType(r.Type)
+	if r.Owner != nil {
+		builder.SetOwnerID(*r.Owner)
+	}
 	return builder
 }
 
@@ -63,6 +75,45 @@ func (r *ReplacePetParams) Exec(ctx context.Context, id int, builder *ent.PetCre
 	}).Exec(ctx)
 	if err != nil {
 		return nil, err
+	}
+	{
+		// Always clear (Replace means full replacement - unprovided fields are cleared)
+		edgeUpdater := updater.ClearCategories()
+		if len(r.Categories) > 0 {
+			// Add the new edge IDs if provided
+			edgeUpdater = edgeUpdater.AddCategoryIDs(r.Categories...)
+		}
+		// If empty array or omitted, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	{
+		// Always clear (Replace means full replacement - unprovided fields are cleared)
+		edgeUpdater := updater.ClearFriends()
+		if len(r.Friends) > 0 {
+			// Add the new edge IDs if provided
+			edgeUpdater = edgeUpdater.AddFriendIDs(r.Friends...)
+		}
+		// If empty array or omitted, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	{
+		// Always clear (Replace means full replacement - unprovided fields are cleared)
+		edgeUpdater := updater.ClearFollowedBy()
+		if len(r.FollowedBy) > 0 {
+			// Add the new edge IDs if provided
+			edgeUpdater = edgeUpdater.AddFollowedByIDs(r.FollowedBy...)
+		}
+		// If empty array or omitted, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Fetch the entity with eager-loaded edges

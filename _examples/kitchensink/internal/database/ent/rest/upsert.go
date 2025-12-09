@@ -98,6 +98,14 @@ type UpsertUserParams struct {
 	AnyData             *github.User          `json:"any_data,omitempty"`
 	ProfileURL          *schema.ExampleValuer `json:"profile_url,omitempty"`
 	LastAuthenticatedAt *time.Time            `json:"last_authenticated_at,omitempty"`
+	// Pets owned by the user.
+	Pets []int `json:"pets,omitempty"`
+	// Pets that the user is following.
+	FollowedPets []int `json:"followed_pets,omitempty"`
+	// Friends of the user.
+	Friends     []uuid.UUID `json:"friends,omitempty"`
+	Posts       []int       `json:"posts,omitempty"`
+	Friendships []int       `json:"friendships,omitempty"`
 }
 
 func (u *UpsertUserParams) ApplyInputs(builder *ent.UserCreate) *ent.UserCreate {
@@ -148,6 +156,76 @@ func (u *UpsertUserParams) Exec(ctx context.Context, id uuid.UUID, builder *ent.
 	err := builder.OnConflictColumns(user.FieldID).UpdateNewValues().Exec(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if u.Pets != nil {
+		// Field was explicitly provided in the request (could be empty array or have values)
+		// Always clear first to ensure replace semantics (not append)
+		edgeUpdater := updater.ClearPets()
+		if len(u.Pets) > 0 {
+			// Add the new edge IDs
+			edgeUpdater = edgeUpdater.AddPetIDs(u.Pets...)
+		}
+		// If empty array was provided, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if u.FollowedPets != nil {
+		// Field was explicitly provided in the request (could be empty array or have values)
+		// Always clear first to ensure replace semantics (not append)
+		edgeUpdater := updater.ClearFollowedPets()
+		if len(u.FollowedPets) > 0 {
+			// Add the new edge IDs
+			edgeUpdater = edgeUpdater.AddFollowedPetIDs(u.FollowedPets...)
+		}
+		// If empty array was provided, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if u.Friends != nil {
+		// Field was explicitly provided in the request (could be empty array or have values)
+		// Always clear first to ensure replace semantics (not append)
+		edgeUpdater := updater.ClearFriends()
+		if len(u.Friends) > 0 {
+			// Add the new edge IDs
+			edgeUpdater = edgeUpdater.AddFriendIDs(u.Friends...)
+		}
+		// If empty array was provided, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if u.Posts != nil {
+		// Field was explicitly provided in the request (could be empty array or have values)
+		// Always clear first to ensure replace semantics (not append)
+		edgeUpdater := updater.ClearPosts()
+		if len(u.Posts) > 0 {
+			// Add the new edge IDs
+			edgeUpdater = edgeUpdater.AddPostIDs(u.Posts...)
+		}
+		// If empty array was provided, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if u.Friendships != nil {
+		// Field was explicitly provided in the request (could be empty array or have values)
+		// Always clear first to ensure replace semantics (not append)
+		edgeUpdater := updater.ClearFriendships()
+		if len(u.Friendships) > 0 {
+			// Add the new edge IDs
+			edgeUpdater = edgeUpdater.AddFriendshipIDs(u.Friendships...)
+		}
+		// If empty array was provided, just clear (don't add anything)
+		err = edgeUpdater.Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Fetch the entity with eager-loaded edges

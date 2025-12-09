@@ -15,6 +15,41 @@ import (
 	"github.com/fatih/structtag"
 )
 
+// EdgeHasOperation checks if an edge has an operation, with inheritance from the parent type.
+// The lookup order is:
+//  1. Edge's explicit operations (if set via WithIncludeOperations on the edge)
+//  2. Parent type's explicit operations (if set via WithIncludeOperations on the schema)
+//  3. Global default operations from config
+//
+// This ensures that when you enable an operation on an entity (e.g., Upsert), its edges
+// automatically participate in that operation without requiring explicit annotations on each edge.
+func EdgeHasOperation(edge *gen.Edge, parentType *gen.Type, config *Config, op Operation) bool {
+	edgeAnt := GetAnnotation(edge)
+
+	// If edge has explicit operations, use those
+	if edgeAnt.Operations != nil {
+		// Check exclusions
+		if len(edgeAnt.ExcludedOperations) > 0 && slices.Contains(edgeAnt.ExcludedOperations, op) {
+			return false
+		}
+		return slices.Contains(edgeAnt.Operations, op)
+	}
+
+	// If edge has explicit exclusions but no explicit inclusions, check parent then defaults
+	if len(edgeAnt.ExcludedOperations) > 0 && slices.Contains(edgeAnt.ExcludedOperations, op) {
+		return false
+	}
+
+	// Check parent type's operations
+	parentAnt := GetAnnotation(parentType)
+	if parentAnt.Operations != nil {
+		return slices.Contains(parentAnt.Operations, op)
+	}
+
+	// Finally, fall back to global defaults
+	return slices.Contains(config.DefaultOperations, op)
+}
+
 // ptr returns a pointer to the given value. Should only be used for primitives.
 func ptr[T any](v T) *T {
 	return &v

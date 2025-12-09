@@ -345,3 +345,147 @@ func TestAnnotation_EdgesInUpsert(t *testing.T) {
 		assert.NotNil(t, r.json(`$.components.schemas.PetCreate.properties.owner`))
 	})
 }
+
+func TestAnnotation_EdgeOperationInheritance(t *testing.T) {
+	t.Parallel()
+
+	t.Run("edge-inherits-upsert-from-entity", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				// Add upsert operation to Pet entity only, NOT to the owner edge
+				// The edge should automatically inherit this from the entity
+				injectAnnotations(t, g, "Pet",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationUpsert,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				// Note: No annotation on Pet.owner - it should inherit from Pet
+				return nil
+			},
+		})
+
+		// Verify Upsert schema includes the owner edge even though edge wasn't annotated
+		assert.NotNil(t, r.json(`$.components.schemas.PetUpsert`), "PetUpsert schema should exist")
+		assert.NotNil(t, r.json(`$.components.schemas.PetUpsert.properties.owner`), "PetUpsert should include owner edge via inheritance")
+		assert.Equal(t, "string", r.json(`$.components.schemas.PetUpsert.properties.owner.type`))
+	})
+
+	t.Run("edge-inherits-replace-from-entity", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				// Add replace operation to Pet entity only
+				injectAnnotations(t, g, "Pet",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationCreateOrReplace,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				// Note: No annotation on Pet.owner - it should inherit from Pet
+				return nil
+			},
+		})
+
+		// Verify Replace schema includes the owner edge via inheritance
+		assert.NotNil(t, r.json(`$.components.schemas.PetReplace`), "PetReplace schema should exist")
+		assert.NotNil(t, r.json(`$.components.schemas.PetReplace.properties.owner`), "PetReplace should include owner edge via inheritance")
+		assert.Equal(t, "string", r.json(`$.components.schemas.PetReplace.properties.owner.type`))
+	})
+
+	t.Run("edge-inherits-create-when-not-in-defaults", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			// Override default operations to NOT include Create
+			DefaultOperations: []Operation{OperationRead, OperationList},
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				// Pet entity explicitly enables Create
+				injectAnnotations(t, g, "Pet",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationList,
+					),
+				)
+				// Note: No annotation on Pet.owner - it should inherit Create from Pet, not from defaults
+				return nil
+			},
+		})
+
+		// Verify Create schema includes the owner edge via entity inheritance (not defaults)
+		assert.NotNil(t, r.json(`$.components.schemas.PetCreate`), "PetCreate schema should exist")
+		assert.NotNil(t, r.json(`$.components.schemas.PetCreate.properties.owner`), "PetCreate should include owner edge via inheritance from entity")
+	})
+
+	t.Run("edge-exclusion-overrides-entity-inheritance", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				// Entity enables upsert
+				injectAnnotations(t, g, "Pet",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationUpsert,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				// Edge explicitly excludes upsert - this should override entity's operations
+				injectAnnotations(t, g, "Pet.owner",
+					WithExcludeOperations(OperationUpsert),
+				)
+				return nil
+			},
+		})
+
+		// Verify Upsert schema exists but does NOT include the owner edge
+		assert.NotNil(t, r.json(`$.components.schemas.PetUpsert`))
+		assert.Nil(t, r.json(`$.components.schemas.PetUpsert.properties.owner`), "owner edge should be excluded due to WithExcludeOperations")
+
+		// But Create should still have the edge (excluded only upsert)
+		assert.NotNil(t, r.json(`$.components.schemas.PetCreate.properties.owner`))
+	})
+
+	t.Run("non-unique-edge-inherits-from-entity", func(t *testing.T) {
+		t.Parallel()
+
+		r := mustBuildSpec(t, &Config{
+			PreGenerateHook: func(g *gen.Graph, _ *ogen.Spec) error {
+				// Category has a non-unique edge to Pet (pets)
+				injectAnnotations(t, g, "Category",
+					WithIncludeOperations(
+						OperationCreate,
+						OperationRead,
+						OperationUpdate,
+						OperationUpsert,
+						OperationDelete,
+						OperationList,
+					),
+				)
+				// Note: No annotation on Category.pets - it should inherit from Category
+				return nil
+			},
+		})
+
+		// Verify Upsert schema includes the pets edge as an array via inheritance
+		assert.NotNil(t, r.json(`$.components.schemas.CategoryUpsert`))
+		assert.NotNil(t, r.json(`$.components.schemas.CategoryUpsert.properties.pets`), "CategoryUpsert should include pets edge via inheritance")
+		assert.Equal(t, "array", r.json(`$.components.schemas.CategoryUpsert.properties.pets.type`))
+		assert.Equal(t, "integer", r.json(`$.components.schemas.CategoryUpsert.properties.pets.items.type`))
+	})
+}

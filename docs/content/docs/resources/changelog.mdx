@@ -20,6 +20,7 @@ Example: `v1.0.0+upstream.1.0.1` means fork version 1.0.0 based on upstream vers
 ## [Unreleased]
 
 ### Fixed
+- **Edges now inherit operations from parent entity** - When an entity has operations configured via `WithIncludeOperations` (e.g., `OperationUpsert`), its edges now automatically participate in those operations without requiring explicit annotations on each edge. The inheritance order is: edge's explicit operations → parent entity's operations → global defaults. This fixes the issue where enabling `OperationUpsert` on a singleton entity would still require annotating each edge separately.
 - **JSON tag handling preserves existing options** - The internal `patchJSONTag` function now properly removes only the `omitempty` option from JSON tags while preserving other tag options and metadata, rather than replacing the entire struct tag
 
 ## [v1.1.1+upstream.1.0.2] - 2025-11-24

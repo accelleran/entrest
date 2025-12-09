@@ -82,7 +82,7 @@ import (
                 {{- if or
                     (($e|getAnnotation).GetSkip $.Annotations.RestConfig)
                     $e.Annotations.Rest.ReadOnly
-                    (not (($e|getAnnotation).HasOperation $.Annotations.RestConfig "replace"))
+                    (not (edgeHasOperation $e $t $.Annotations.RestConfig "replace"))
                     (not $e.Type.ID)
                 }}
                     {{- continue }}
@@ -121,23 +121,25 @@ import (
             {{- if or
                 (($e|getAnnotation).GetSkip $.Annotations.RestConfig)
                 $e.Annotations.Rest.ReadOnly
-                (not (($e|getAnnotation).HasOperation $.Annotations.RestConfig "replace"))
+                (not (edgeHasOperation $e $t $.Annotations.RestConfig "replace"))
                 (not $e.Type.ID)
                 $e.Unique
                 $e.Field
             }}
                 {{- continue }}
             {{- end }}
-        // Always clear (Replace means full replacement - unprovided fields are cleared)
-        edgeUpdater := updater.Clear{{ $e.StructField }}()
-        if len(r.{{ $e.StructField }}) > 0 {
-            // Add the new edge IDs if provided
-            edgeUpdater = edgeUpdater.Add{{ $e.Name|zsingular|pascal }}IDs(r.{{ $e.StructField }}...)
-        }
-        // If empty array or omitted, just clear (don't add anything)
-        err = edgeUpdater.Exec(ctx)
-        if err != nil {
-            return nil, err
+        {
+            // Always clear (Replace means full replacement - unprovided fields are cleared)
+            edgeUpdater := updater.Clear{{ $e.StructField }}()
+            if len(r.{{ $e.StructField }}) > 0 {
+                // Add the new edge IDs if provided
+                edgeUpdater = edgeUpdater.Add{{ $e.Name|zsingular|pascal }}IDs(r.{{ $e.StructField }}...)
+            }
+            // If empty array or omitted, just clear (don't add anything)
+            err = edgeUpdater.Exec(ctx)
+            if err != nil {
+                return nil, err
+            }
         }
         {{- end }}
 

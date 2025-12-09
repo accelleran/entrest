@@ -30,7 +30,7 @@
         {{- if or
             (($e|getAnnotation).GetSkip $config)
             $e.Annotations.Rest.ReadOnly
-            (not (or (($e|getAnnotation).HasOperation $config "upsert") (($e|getAnnotation).HasOperation $config "replace")))
+            (not (or (edgeHasOperation $e $t $config "upsert") (edgeHasOperation $e $t $config "replace")))
             (not $e.Type.ID)
         }}
             {{- continue }}
